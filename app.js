@@ -1,0 +1,79 @@
+const express = require('express')
+const cors = require('cors')
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+require('dotenv').config()
+const db = require('./DB/dbConfig');
+
+const app = express()
+
+app.use(express.static('dist'))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(cors())
+
+const essentialRouter = require('./router/essential.js')
+const userRouter = require('./router/users.js')
+const itemRouter = require('./router/items.js')
+const expenseRouter = require('./router/expenses.js')
+const supplierRouter = require('./router/suppliers.js')
+const customerRouter = require('./router/customers.js')
+const purchaseRouter = require('./router/purchase.js')
+// const purchaseRouter = require('./router/purchases.js')
+const invoiceRouter = require('./router/invoices.js')
+const generalReport = require('./router/generalReport.js')
+
+app.use('/essential', essentialRouter)
+app.use('/user', userRouter)
+app.use('/item', itemRouter)
+app.use('/expense', expenseRouter)
+app.use('/supplier', supplierRouter)
+app.use('/customer', customerRouter)
+app.use('/purchase', purchaseRouter)
+app.use('/invoice', invoiceRouter)
+app.use('/generalReport', generalReport)
+
+app.post('/login', async (req, res) => {
+    const [user] = await db('tbl_users').where('userName', req.body.userName).select();
+    if(user) {
+        bcrypt.compare(req.body.password, user.userPassword, async (err, result) => {
+            if(result) {
+                if(user.activeStatus == 1) {
+                    const userPermissions = await db('tbl_sub_role').where('roleID', user.roleID).select(['subRoleName']);
+                    const token = jwt.sign({
+                        userID: user.userID,
+                        userName: user.userName,
+                        fullName: user.fullName,
+                        permissions: userPermissions.map(({subRoleName}) => subRoleName)
+                    }, 'sulyMarket001', { expiresIn: '12h' });
+                    return res.status(200).send({ token });
+                } else {
+                    return res.status(500).send({
+                        message: 'ئەم هەژمارە ناچالاک کراوە'
+                    });
+                }
+            } else {
+                return res.status(500).send({
+                    message: 'وشەی نهێنی هەڵەیە'
+                });
+            }
+        });
+    } else {
+        return res.status(500).send({
+            message: 'ناوی بەکارهێنەر هەڵەیە'
+        });
+    }
+});
+
+app.post('/verifyToken', (req, res) => {
+    try {
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001');
+        return res.status(200).send(decoded);
+    } catch (error) {
+        return res.sendStatus(500);
+    }
+});
+
+app.listen(process.env.PORT, () => {
+    console.log(`Server started on port ${process.env.PORT}`);
+})
