@@ -45,8 +45,8 @@ router.post('/addItem', async(req,res) => {
                     hideInStock: req.body.hideInStock || 1,
                     showButton: req.body.showButton || 0,
                     note: req.body.note || null,
-                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID,
-                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID,
+                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
                 })
                 return res.status(200).send({
                     itemID,
@@ -80,7 +80,7 @@ router.patch('/updateItem/:itemID', async(req,res) => {
             showButton: req.body.showButton || 0,
             note: req.body.note,
             updateAt: new Date(),
-            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         res.sendStatus(200)
     } catch (error) {
@@ -208,9 +208,9 @@ router.get('/getButtonItems/:categoryID', async (req, res) => {
 router.get('/getUnitInfo/:itemID', async (req, res) => {
     const [item] = await db.select(
         'tbl_items.perUnit as perUnit',
-        'tbl_units.shortName as unit'
+        'tbl_items.itemPriceWhole as itemPriceWhole',
+        'tbl_items.itemPriceRetail as itemPriceRetail',
     ).from('tbl_items')
-     .join('tbl_units', 'tbl_items.unitID', '=', 'tbl_units.unitID')
      .where('tbl_items.itemID', req.params.itemID);
     res.status(200).send(item);
 });
@@ -224,7 +224,7 @@ router.post('/addDisposal', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: req.body.expiryDate,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
 
         // send to stock

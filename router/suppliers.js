@@ -91,14 +91,14 @@ router.post('/addReturnDebt', async(req,res) => {
             discount: req.body.discount,
             dollarPrice: req.body.dollarPrice,
             purchaseNumbers: req.body.purchaseNumbers.length ? req.body.purchaseNumbers.join(',') : null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         
         if(req.body.purchaseNumbers.length) {
             await db('tbl_purchases').whereIn('purchaseID', req.body.purchaseNumbers).update({
                 debtStatus: '1',
                 updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
             });
         }
         res.status(201).send({

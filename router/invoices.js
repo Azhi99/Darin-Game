@@ -6,19 +6,36 @@ const router = express.Router()
 
 router.post('/addInvoice', async(req,res) => {
     try {
-        const [item] = await db('tbl_items').where('itemCode', req.body.search).orWhere('itemName', req.body.search).andWhere('deleteStatus', '1').select();
+        // const [item] = await db('tbl_items').where('itemCode', req.body.search).orWhere('itemName', req.body.search).andWhere('deleteStatus', '1').select();
+        const [item] = await db.select(
+            'tbl_items.itemID as itemID',
+            'tbl_items.itemName as itemName',
+            'tbl_items.perUnit as perUnit',
+            'tbl_items.itemPriceRetail as itemPriceRetail',
+            'tbl_items.itemPriceWhole as itemPriceWhole',
+            'tbl_items.costPrice as costPrice',
+            'tbl_items.shelfID as shelfID',
+            'tbl_shelfs.shelfName as shelfName',
+            'tbl_items.unitID as unitID',
+            'tbl_units.unitName as unitName'
+        ).from('tbl_items')
+         .join('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
+         .join('tbl_units', 'tbl_items.unitID', '=', 'tbl_units.unitID')
+         .where('tbl_items.itemCode', req.body.search)
+         .orWhere('tbl_items.itemName', req.body.search)
+         .andWhere('tbl_items.deleteStatus', '1');
         if(!item) {
             return res.status(500).send({
                 message: 'هیچ کاڵایەک نەدۆزرایەوە'
             });
         }
-        const [[{expiryDate}]] = await db.raw(`
-            select expiryDate from tbl_stock where itemID = ${item.itemID} group by itemID, expiryDate HAVING sum(qty) > 0 ORDER BY expiryDate asc limit 1
-        `);
+        // const [[{expiryDate}]] = await db.raw(`
+        //     select expiryDate from tbl_stock where itemID = ${item.itemID} group by itemID, expiryDate HAVING sum(qty) > 0 ORDER BY expiryDate asc limit 1
+        // `);
         if(!req.body.invoiceID) {
             const [addInvoice] = await db('tbl_invoices').insert({
                 customerID: req.body.customerID || 1,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
                 totalPrice: req.body.totalPrice || 0,
                 totalPay: req.body.totalPay || 0, 
                 discount: req.body.discount || 0,
@@ -26,7 +43,7 @@ router.post('/addInvoice', async(req,res) => {
                 stockType: req.body.stockType || 's',
                 sellStatus: '0',
                 invoiceType: req.body.invoiceType || 'c',
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
             })
 
             const [invdID] = await db('tbl_invoice_item').insert({
@@ -35,7 +52,8 @@ router.post('/addInvoice', async(req,res) => {
                 qty: req.body.wholeSell ? item.perUnit : 1,
                 productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
                 costPrice: item.costPrice,
-                expiryDate
+                shelfID: item.shelfID,
+                unitID: item.unitID
             })
 
             return res.status(201).send({
@@ -45,6 +63,8 @@ router.post('/addInvoice', async(req,res) => {
                 itemName: item.itemName,
                 qty: req.body.wholeSell ? item.perUnit : 1,
                 productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
+                shelfName: item.shelfName,
+                unitName: item.unitName,
                 message: 'Invoice Created'
             })
         } else {
@@ -56,7 +76,8 @@ router.post('/addInvoice', async(req,res) => {
                     qty: req.body.wholeSell ? item.perUnit : 1,
                     productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
                     costPrice: item.costPrice,
-                    expiryDate
+                    shelfID: item.shelfID,
+                    unitID: item.unitID
                 })
                 return res.status(200).send({
                     invdID,
@@ -64,6 +85,8 @@ router.post('/addInvoice', async(req,res) => {
                     itemName: item.itemName,
                     qty: req.body.wholeSell ? item.perUnit : 1,
                     productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
+                    shelfName: item.shelfName,
+                    unitName: item.unitName,
                     message: 'Item Added'
                 });
             } else {
@@ -89,7 +112,7 @@ router.patch('/updateInvoice/:invoiceID', async(req,res)=> {
             totalPrice: req.body.totalPrice || 0,
             totalPay: req.body.totalPay || 0,
             discount: req.body.discount || 0,
-            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         res.sendStatus(200)
     } catch (error) {
@@ -120,10 +143,32 @@ router.patch('/decreaseItem/:invoiceID/:invdID', async (req, res) => {
     });
 });
 
+router.patch('/changePricetoWhole/:invdID', async (req, res) => {
+    try {
+        await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
+            productPrice: req.body.itemPriceWhole
+        });
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
 router.patch('/changeQty/:invdID', async (req, res) => {
     try {
         await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
             qty: req.body.qty
+        });
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+router.patch('/changeProductPrice/:invdID', async (req, res) => {
+    try {
+        await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
+            productPrice: req.body.productPrice
         });
         res.sendStatus(200);
     } catch (error) {
@@ -164,7 +209,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
             stockType: req.body.stockType || 's',
             sellStatus: '1',
             invoiceType: req.body.invoiceType || 'c',
-            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
     
         var items = null;
@@ -175,8 +220,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 db.raw(`itemID as itemID`),
                 db.raw(`(qty * -1) as qty`),
                 db.raw(`productPrice as itemPrice`),
-                db.raw(`costPrice as costPrice`),
-                db.raw(`expiryDate as expiryDate`)
+                db.raw(`costPrice as costPrice`)
             ).from('tbl_invoice_item')
              .where('invoiceID', req.params.invoiceID);
         } else {
@@ -224,9 +268,13 @@ router.get('/searchInvoice/:invoiceID', async (req, res) => {
         'tbl_invoice_item.itemID as itemID',
         'tbl_items.itemName as itemName',
         'tbl_invoice_item.qty as qty',
-        'tbl_invoice_item.productPrice as productPrice'
+        'tbl_invoice_item.productPrice as productPrice',
+        'tbl_shelfs.shelfName as shelfName',
+        'tbl_units.unitName as unitName'
     ).from('tbl_invoice_item')
      .join('tbl_items', 'tbl_items.itemID', '=', 'tbl_invoice_item.itemID')
+     .join('tbl_shelfs', 'tbl_invoice_item.shelfID', '=', 'tbl_shelfs.shelfID')
+     .join('tbl_units', 'tbl_invoice_item.unitID', '=', 'tbl_units.unitID')
      .where('tbl_invoice_item.invoiceID', req.params.invoiceID);
 
     return res.status(200).send({

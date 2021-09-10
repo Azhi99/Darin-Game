@@ -11,7 +11,7 @@ router.post('/addCustomer', async(req,res) => {
             address: req.body.address || null,
             previousDebt: req.body.previousDebt || 0,
             limitDebt: req.body.limitDebt || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         res.status(201).send({
             customerID
@@ -34,7 +34,7 @@ router.patch('/updateCustomer/:customerID', async(req,res) => {
             address: req.body.address,
             previousDebt: req.body.previousDebt || 0,
             limitDebt: req.body.limitDebt || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
          res.sendStatus(200)
     } catch (error) {
@@ -121,13 +121,13 @@ router.post('/addReturnDebt', async(req,res) => {
             discount: req.body.discount || 0,
             dollarPrice: req.body.dollarPrice || 0,
             invoiceNumbers: req.body.invoiceNumbers.join(',') || null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         if(req.body.invoiceNumbers.length > 0) {
             await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
                 invoiceType: 'c',
                 updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
             });
         }
         res.status(201).send({
@@ -143,7 +143,7 @@ router.patch('/updateReturnDebt/:rdcID', async(req,res) => {
         await db('tbl_return_debt_customer').where('rdcID', req.params.rdcID).update({
             amountReturn: req.body.amountReturn || 0,
             discount: req.body.discount || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
         if(req.body.invoiceNumbers.length > 0) {
             const [{oldInvoices}] = await db('tbl_return_debt_customer').where('rdcID', req.params.rdcID).select(['invoiceNumbers as oldInvoices']);
@@ -154,7 +154,7 @@ router.patch('/updateReturnDebt/:rdcID', async(req,res) => {
             await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
                 invoiceType: 'c',
                 updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
             });
             return res.status(200).send({
                 newInvoices
