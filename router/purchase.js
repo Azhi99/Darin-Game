@@ -7,7 +7,7 @@ router.post('/', async (req, res) => {
     try {
         const purchase = req.body.data
         purchase.createAt = new Date().toISOString().split("T")[0], purchase.updateAt = purchase.createAt
-        purchase.userIDCreated = jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001'), purchase.userIDUpdate = jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')
+        purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
 
         const purchase_items = purchase.purchase_items
         delete purchase.purchase_items
@@ -71,7 +71,7 @@ router.patch('/updatePurchase', async (req, res) => {
     const purchase = req.body.data
     purchaseID = purchase.purchaseID
     delete purchase.purchaseID
-    purchase.userIDCreated = jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001')
+    purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
     purchase.updateAt = new Date().toISOString().split("T")[0]
 
     await db('tbl_purchases').update(purchase).where('purchaseID', '=', purchaseID)
