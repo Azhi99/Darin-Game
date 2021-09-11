@@ -66,7 +66,9 @@ router.get('/allSuppliers', async(req,res) => {
         tbl_suppliers.createAt,
         tbl_suppliers.activeStatus,
         tbl_purchases.paymentType,
-        IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' THEN tbl_purchases.totalPrice END), 0) - IFNULL(SUM(tbl_return_debt.amountReturn), 0) AS totalRemain
+        IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+        tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + IFNULL(tbl_suppliers.previousBalance, 0) - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+        tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) AS totalRemain
       FROM tbl_purchases
         RIGHT OUTER JOIN tbl_suppliers
           ON tbl_purchases.supplierID = tbl_suppliers.supplierID
@@ -194,5 +196,34 @@ router.get('/getDebtsList', async (req, res) => {
     `);
     res.status(200).send(debtsList);
 });
+
+router.get('/debtSupToCust', async(req,res) => {
+    try {
+        const [debtSupToCust] = await db.raw(`SELECT
+        view_debt_with_partner_sup_to_cust.supplierID AS supplierID,
+       view_debt_with_partner_sup_to_cust.supplierName AS supplierName,
+       IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) AS totalRemainSupplier,
+       view_debt_with_partner_sup_to_cust.totalRemainCustomer AS totalRemainCustomer,
+       IF(IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) - view_debt_with_partner_sup_to_cust.totalRemainCustomer >= 0, IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
+           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) - view_debt_with_partner_sup_to_cust.totalRemainCustomer, 0) AS totalRemainAll
+     FROM ((view_debt_with_partner_sup_to_cust
+       LEFT JOIN tbl_purchases
+         ON (view_debt_with_partner_sup_to_cust.supplierID = tbl_purchases.supplierID))
+       LEFT JOIN tbl_return_debt
+         ON (view_debt_with_partner_sup_to_cust.supplierID = tbl_return_debt.supplierID))
+     GROUP BY view_debt_with_partner_sup_to_cust.supplierName
+     order by 1`)
+     res.status(200).send({
+         debtSupToCust
+     })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
 
 module.exports = router

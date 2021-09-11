@@ -78,7 +78,9 @@ router.get('/allCustomers', async(req,res) => {
         tbl_users.userName,
         IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' THEN tbl_invoices.totalPrice END), 0) + tbl_customers.previousDebt AS totalDebt,
         IFNULL(tbl_return_debt_customer.amountReturn,0) AS totalReturn,
-        (IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' THEN tbl_invoices.totalPrice END), 0) + tbl_customers.previousDebt) - IFNULL(tbl_return_debt_customer.amountReturn,0) AS totalRemain
+        IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+      tbl_invoices.stockType = 's' THEN tbl_invoices.totalPrice END), 0) + IFNULL(tbl_customers.previousDebt, 0) - IFNULL(tbl_return_debt_customer.amountReturn, 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+      tbl_invoices.stockType = 'rs' THEN tbl_invoices.totalPrice END), 0) AS totalRemain
       FROM tbl_customers
         INNER JOIN tbl_users
           ON tbl_customers.userID = tbl_users.userID
