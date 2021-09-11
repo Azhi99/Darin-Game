@@ -45,7 +45,7 @@ app.post('/login', async (req, res) => {
                         userName: user.userName,
                         fullName: user.fullName,
                         permissions: userPermissions.map(({subRoleName}) => subRoleName)
-                    }, 'sulyMarket001', { expiresIn: '12h' });
+                    }, 'darinGame2021', { expiresIn: '12h' });
                     return res.status(200).send({ token });
                 } else {
                     return res.status(500).send({
@@ -67,7 +67,7 @@ app.post('/login', async (req, res) => {
 
 app.post('/verifyToken', (req, res) => {
     try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], 'sulyMarket001');
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021');
         return res.status(200).send(decoded);
     } catch (error) {
         return res.sendStatus(500);

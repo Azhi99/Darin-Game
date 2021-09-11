@@ -2,6 +2,25 @@ const db = require('../DB/dbConfig.js')
 const express = require('express')
 const router = express.Router()
 
+// Dollar routes
+router.get('/getDollarPrice', async (req, res) => {
+    const [{dollarPrice}] = await db('tbl_dollar').where('dollarId', 1).select(['dollarPrice']);
+    res.status(200).send({
+        dollarPrice
+    });
+});
+
+router.patch('/updateDollar', async (req, res) => {
+    try {
+        await db('tbl_dollar').update({
+            dollarPrice: req.body.dollarPrice || 0
+        });
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
 // categories routers
 router.post('/addCategory', async(req,res) => {
    try {
@@ -174,7 +193,7 @@ router.post('/addUnit', async(req,res) => {
             shortName: req.body.shortName
         })
          res.status(201).send({
-             unitID
+            unitID
          })
     } catch (error) {
         res.status(500).send()
