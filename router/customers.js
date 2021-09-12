@@ -283,4 +283,38 @@ router.get('/getDebtsList', async (req, res) => {
     res.status(200).send(debtsList);
 });
 
+router.get('/debtCustToSup', async(req,res) => {
+    try {
+        const [debtCustToSup] = await db.raw(`SELECT
+        view_debt_with_partner_cust_to_sup.customerID AS customerID,
+        view_debt_with_partner_cust_to_sup.customerName AS customerName,
+        view_debt_with_partner_cust_to_sup.previousDebt AS previousDebt,
+        view_debt_with_partner_cust_to_sup.totalRemainSupplier AS totalRemainSupplier,
+        IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPrice END), 0) + IFNULL(view_debt_with_partner_cust_to_sup.previousDebt, 0) - (IFNULL(tbl_return_debt_customer.amountReturn, 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 'rs' THEN tbl_invoices.totalPrice END), 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPay END), 0)) AS totalRemainCustomer,
+        IF(-1 * (view_debt_with_partner_cust_to_sup.totalRemainSupplier - IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPrice END), 0) + IFNULL(view_debt_with_partner_cust_to_sup.previousDebt, 0) - (IFNULL(tbl_return_debt_customer.amountReturn, 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 'rs' THEN tbl_invoices.totalPrice END), 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPay END), 0))) >= 0, -1 * (view_debt_with_partner_cust_to_sup.totalRemainSupplier - IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPrice END), 0) + IFNULL(view_debt_with_partner_cust_to_sup.previousDebt, 0) - (IFNULL(tbl_return_debt_customer.amountReturn, 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 'rs' THEN tbl_invoices.totalPrice END), 0)) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
+            tbl_invoices.stockType = 's' THEN tbl_invoices.totalPay END), 0)), 0) AS totalRemainAll
+      FROM ((view_debt_with_partner_cust_to_sup
+        LEFT JOIN tbl_invoices
+          ON (view_debt_with_partner_cust_to_sup.customerID = tbl_invoices.customerID))
+        LEFT JOIN tbl_return_debt_customer
+          ON (view_debt_with_partner_cust_to_sup.customerID = tbl_return_debt_customer.customerID))
+      GROUP BY view_debt_with_partner_cust_to_sup.customerName
+      order by 1`)
+
+        res.status(200).send({
+            debtCustToSup
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 module.exports = router
