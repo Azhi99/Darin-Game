@@ -309,7 +309,9 @@ router.get('/getTodayInvoices', async(req,res) => {
     try {
         const [getTodayInvoices] = await db.raw(`SELECT
                     tbl_invoices.invoiceID,
+                    tbl_invoices.customerID,
                     tbl_customers.customerName,
+                    tbl_invoices.userIDUpdate,
                     tbl_users.userName,
                     tbl_invoices.totalPrice,
                     tbl_invoices.totalPay,
@@ -324,9 +326,22 @@ router.get('/getTodayInvoices', async(req,res) => {
                     ON tbl_invoices.customerID = tbl_customers.customerID
                     AND tbl_customers.userID = tbl_users.userID
                     ORDER BY invoiceID DESC`)
+        
+        const [[{totalCash}]] = await db.raw(`SELECT
+                SUM(totalPrice) AS totalCash
+            FROM tbl_invoices
+            WHERE date(createAt) = '${new Date().toISOString().split('T')[0]}'
+        `);
+        const [[{totalDebt}]] = await db.raw(`SELECT
+                SUM(totalPrice - totalPay) AS totalDebt
+            FROM tbl_invoices
+            WHERE date(createAt) = '${new Date().toISOString().split('T')[0]}'
+        `);
 
         res.status(200).send({
-            getTodayInvoices
+            getTodayInvoices,
+            totalCash,
+            totalDebt
         })            
     } catch (error) {
         res.status(500).send(error)
