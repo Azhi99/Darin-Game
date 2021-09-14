@@ -223,7 +223,7 @@ router.post('/addDisposal', async(req,res) => {
             itemID: req.body.itemID,
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
-            expiryDate: req.body.expiryDate,
+            expiryDate: null,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
 
@@ -235,7 +235,7 @@ router.post('/addDisposal', async(req,res) => {
             itemID: req.body.itemID,
             qty:  -1 * (req.body.qty),
             costPrice: req.body.costPrice,
-            expiryDate: req.body.expiryDate
+            expiryDate: null
         })
          res.status(201).send({
             disposalID,
@@ -251,7 +251,7 @@ router.patch('/updateDisposal/:disposalID', async(req,res) => {
             itemID: req.body.itemID,
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
-            expiryDate: req.body.expiryDate,
+            expiryDate: null,
             userID: 3
         })
 
@@ -264,7 +264,7 @@ router.patch('/updateDisposal/:disposalID', async(req,res) => {
             itemID: req.body.itemID,
             qty:  -1 * (req.body.qty),
             costPrice: req.body.costPrice,
-            expiryDate: req.body.expiryDate,
+            expiryDate: null,
             updateAt: new Date()
         })
          res.sendStatus(200)
