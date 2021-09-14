@@ -125,13 +125,13 @@ router.post('/addReturnDebt', async(req,res) => {
             invoiceNumbers: req.body.invoiceNumbers.join(',') || null,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
-        if(req.body.invoiceNumbers.length > 0) {
-            await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
-                invoiceType: 'c',
-                updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
-            });
-        }
+        // if(req.body.invoiceNumbers.length > 0) {
+        //     await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
+        //         invoiceType: 'c',
+        //         updateAt: new Date(),
+        //         userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        //     });
+        // }
         res.status(201).send({
             rdcID
         })
