@@ -317,4 +317,24 @@ router.get('/debtCustToSup', async(req,res) => {
     }
 })
 
+router.get('/getCustomerDebtForInvoice/:customerID', async (req, res) => {
+    const [[{totalRemain}]] = await db.raw(`SELECT
+        view_total_remain_debt_customer.customerID,
+        view_total_remain_debt_customer.customerName,
+        view_total_remain_debt_customer.totalRemainCustomer,
+        IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0) AS totalRemainSupplier,
+        IF(view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0) >= 0,
+        view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0),0) AS totalRemain
+    FROM view_total_remain_debt_customer
+        LEFT OUTER JOIN view_total_remain_debt_supplier
+        ON view_total_remain_debt_customer.customerName = view_total_remain_debt_supplier.supplierName
+    WHERE view_total_remain_debt_customer.customerID = ${req.params.customerID}
+    GROUP BY view_total_remain_debt_customer.customerID
+    ORDER BY view_total_remain_debt_customer.customerID`)
+
+    res.status(200).send({
+        totalRemain
+    });
+})
+
 module.exports = router
