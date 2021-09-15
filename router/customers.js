@@ -273,14 +273,20 @@ router.get('/getDebtInvoices/:customerID', async (req, res) => {
 
 router.get('/getDebtsList', async (req, res) => {
     const [debtsList] = await db.raw(`SELECT
-        tbl_customers.customerName,
-        SUM(tbl_invoices.totalPrice - tbl_invoices.totalPay) as totalDebt
-            FROM tbl_invoices
-                JOIN tbl_customers ON tbl_invoices.customerID = tbl_customers.customerID
-            WHERE tbl_invoices.sellStatus = '1' AND tbl_invoices.invoiceType = 'd' AND tbl_invoices.stockType = 's'
-        GROUP BY tbl_invoices.customerID
-        ORDER BY 2 DESC
-    `);
+    view_total_account_customer.customerID AS customerID,
+    view_total_account_customer.customerName AS customerName,
+    view_total_account_customer.previousDebt AS previousDebt,
+    view_total_account_customer.totalInvoiceDebt AS totalInvoiceDebt,
+    view_total_account_customer.totalPay AS totalPay,
+    view_total_account_customer.totalReturnInvoice AS totalReturnInvoice,
+    IFNULL(SUM(tbl_return_debt_customer.amountReturn), 0) AS totalReturnDebt,
+    view_total_account_customer.previousDebt + view_total_account_customer.totalInvoiceDebt - (view_total_account_customer.totalReturnInvoice + view_total_account_customer.totalPay + IFNULL(SUM(tbl_return_debt_customer.amountReturn), 0)) AS totalRemainCustomer
+  FROM (view_total_account_customer
+    LEFT JOIN tbl_return_debt_customer
+      ON (view_total_account_customer.customerID = tbl_return_debt_customer.customerID))
+    WHERE view_total_account_customer.customerID <> 1
+    GROUP BY view_total_account_customer.customerID
+  ORDER BY 8 DESC`);
     res.status(200).send(debtsList);
 });
 
