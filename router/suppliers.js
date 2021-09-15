@@ -187,13 +187,13 @@ router.get('/getDebtPurchases/:supplierID', async (req, res) => {
 
 router.get('/getDebtsList', async (req, res) => {
     const [debtsList] = await db.raw(`SELECT
-        tbl_suppliers.supplierName,
-        SUM(tbl_purchases.totalPrice) as totalDebt
-            FROM tbl_purchases
-                JOIN tbl_suppliers ON tbl_purchases.supplierID = tbl_suppliers.supplierID
-            WHERE tbl_purchases.paymentType = 'd' AND tbl_purchases.debtStatus = '0' AND tbl_purchases.stockType = 'p'
-        GROUP BY tbl_purchases.supplierID
-        ORDER BY 2 DESC
+    view_total_account_supplier.supplierName AS supplierName,
+    view_total_account_supplier.previousBalance + view_total_account_supplier.totalPurchaseDebt - (view_total_account_supplier.totalPay + view_total_account_supplier.totalReturnPurchase + IFNULL(SUM(tbl_return_debt.amountReturn), 0)) AS totalRemainSupplier
+  FROM (view_total_account_supplier
+    LEFT JOIN tbl_return_debt
+      ON (view_total_account_supplier.supplierID = tbl_return_debt.supplierID))
+  GROUP BY view_total_account_supplier.supplierID
+        ORDER BY view_total_account_supplier.supplierID DESC
     `);
     res.status(200).send(debtsList);
 });
