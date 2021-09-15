@@ -2,6 +2,7 @@ const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
 const keySender = require('node-key-sender');
+const { as } = require('../DB/dbConfig.js');
 const router = express.Router()
 
 router.post('/addInvoice', async(req,res) => {
@@ -348,5 +349,63 @@ router.get('/getTodayInvoices', async(req,res) => {
     }
 })
 
+router.get('/getSaleByOwner', async(req,res) => {
+    try {
+        const [getSaleByOwner] = await db.raw(`SELECT
+        tbl_items.itemID AS itemID,
+        tbl_items.itemCode AS itemCode,
+        tbl_items.itemName AS itemName,
+        tbl_shelfs.shelfName,
+        tbl_shelfs.shelfID,
+        IFNULL(SUM(tbl_stock.qty), 0) * -1 AS sold,
+        IFNULL(SUM(tbl_stock.qty) * itemPrice, 0) * -1 AS totalPriceSold,
+        date(tbl_stock.createAt) AS createAt,
+        tbl_stock.sourceType as sourceType
+      FROM tbl_items
+        INNER JOIN tbl_shelfs
+          ON tbl_items.shelfID = tbl_shelfs.shelfID
+        INNER JOIN tbl_stock
+          ON tbl_stock.itemID = tbl_items.itemID
+          WHERE sourceType IN('s','rs') 
+      GROUP BY tbl_items.itemID,
+               date(tbl_stock.createAt),
+               tbl_stock.itemPrice
+               order by tbl_stock.sourceID desc`)
+        res.status(200).send({
+            getSaleByOwner
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.get('/getSaleByOwnerToday', async(req,res) => {
+    try {
+        const [getSaleByOwner] = await db.raw(`SELECT
+        tbl_items.itemID AS itemID,
+        tbl_items.itemCode AS itemCode,
+        tbl_items.itemName AS itemName,
+        tbl_shelfs.shelfName,
+        IFNULL(SUM(tbl_stock.qty), 0) * -1 AS sold,
+        IFNULL(SUM(tbl_stock.qty) * itemPrice, 0) * -1 AS totalPriceSold,
+        date(tbl_stock.createAt) AS createAt,
+        tbl_stock.sourceType as sourceType
+      FROM tbl_items
+        INNER JOIN tbl_shelfs
+          ON tbl_items.shelfID = tbl_shelfs.shelfID
+        INNER JOIN tbl_stock
+          ON tbl_stock.itemID = tbl_items.itemID
+          WHERE sourceType IN('s','rs') and date(tbl_stock.createAt) = '${new Date().toISOString().split('T')[0]}'
+      GROUP BY tbl_items.itemID,
+               date(tbl_stock.createAt),
+               tbl_stock.itemPrice
+               order by tbl_stock.sourceID desc`)
+        res.status(200).send({
+            getSaleByOwner
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
 
 module.exports = router

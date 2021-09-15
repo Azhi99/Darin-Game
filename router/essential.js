@@ -184,6 +184,15 @@ router.get('/getShelfs', async(req,res) => {
     }
 })
 
+router.get('/getOwner', async(req,res) => {
+    try {
+        const getShelfs = await db('tbl_shelfs').select('*')
+         res.status(200).send(getShelfs)
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 // units Routers
 
 router.post('/addUnit', async(req,res) => {

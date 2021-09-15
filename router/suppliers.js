@@ -108,6 +108,7 @@ router.post('/addReturnDebt', async(req,res) => {
         });
     } catch (error) {
         res.status(500).send(error)
+        console.log(error);
     }
 })
 
@@ -200,24 +201,15 @@ router.get('/getDebtsList', async (req, res) => {
 router.get('/debtSupToCust', async(req,res) => {
     try {
         const [debtSupToCust] = await db.raw(`SELECT
-        view_debt_with_partner_sup_to_cust.supplierID AS supplierID,
-       view_debt_with_partner_sup_to_cust.supplierName AS supplierName,
-       IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) AS totalRemainSupplier,
-       view_debt_with_partner_sup_to_cust.totalRemainCustomer AS totalRemainCustomer,
-       IF(IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) - view_debt_with_partner_sup_to_cust.totalRemainCustomer >= 0, IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + view_debt_with_partner_sup_to_cust.previousBalance - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-           tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) - view_debt_with_partner_sup_to_cust.totalRemainCustomer, 0) AS totalRemainAll
-     FROM ((view_debt_with_partner_sup_to_cust
-       LEFT JOIN tbl_purchases
-         ON (view_debt_with_partner_sup_to_cust.supplierID = tbl_purchases.supplierID))
-       LEFT JOIN tbl_return_debt
-         ON (view_debt_with_partner_sup_to_cust.supplierID = tbl_return_debt.supplierID))
-     GROUP BY view_debt_with_partner_sup_to_cust.supplierName
-     order by 1`)
+        view_total_remain_debt_supplier.supplierID,
+        view_total_remain_debt_supplier.supplierName,
+        view_total_remain_debt_supplier.totalRemainSupplier,
+        IFNULL(view_total_remain_debt_customer.totalRemainCustomer, 0) AS totalRemainCustomer,
+        IF((view_total_remain_debt_supplier.totalRemainSupplier - IFNULL(view_total_remain_debt_customer.totalRemainCustomer, 0)) >= 0,(view_total_remain_debt_supplier.totalRemainSupplier - IFNULL(view_total_remain_debt_customer.totalRemainCustomer, 0)), 0) AS totalRemain
+      FROM view_total_remain_debt_supplier
+        LEFT OUTER JOIN view_total_remain_debt_customer
+          ON view_total_remain_debt_supplier.supplierName = view_total_remain_debt_customer.customerName
+      ORDER BY view_total_remain_debt_supplier.supplierID`)
      res.status(200).send({
          debtSupToCust
      })
