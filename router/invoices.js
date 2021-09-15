@@ -251,6 +251,7 @@ router.get('/searchInvoice/:invoiceID', async (req, res) => {
         'tbl_invoices.totalPrice',
         'tbl_invoices.discount',
         'tbl_invoices.stockType',
+        'tbl_invoices.invoiceType',
         'tbl_invoices.sellStatus',
         'tbl_invoices.totalPay',
         'tbl_invoices.dollarPrice',

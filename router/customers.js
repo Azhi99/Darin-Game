@@ -126,13 +126,13 @@ router.post('/addReturnDebt', async(req,res) => {
             invoiceNumbers: req.body.invoiceNumbers.join(',') || null,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
-        if(req.body.invoiceNumbers.length > 0) {
-            await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
-                invoiceType: 'c',
-                updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
-            });
-        }
+        // if(req.body.invoiceNumbers.length > 0) {
+        //     await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
+        //         invoiceType: 'c',
+        //         updateAt: new Date(),
+        //         userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        //     });
+        // }
         res.status(201).send({
             rdcID
         })
@@ -305,6 +305,26 @@ router.get('/debtCustToSup', async(req,res) => {
     } catch (error) {
         res.status(500).send(error)
     }
+})
+
+router.get('/getCustomerDebtForInvoice/:customerID', async (req, res) => {
+    const [[{totalRemain}]] = await db.raw(`SELECT
+        view_total_remain_debt_customer.customerID,
+        view_total_remain_debt_customer.customerName,
+        view_total_remain_debt_customer.totalRemainCustomer,
+        IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0) AS totalRemainSupplier,
+        IF(view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0) >= 0,
+        view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0),0) AS totalRemain
+    FROM view_total_remain_debt_customer
+        LEFT OUTER JOIN view_total_remain_debt_supplier
+        ON view_total_remain_debt_customer.customerName = view_total_remain_debt_supplier.supplierName
+    WHERE view_total_remain_debt_customer.customerID = ${req.params.customerID}
+    GROUP BY view_total_remain_debt_customer.customerID
+    ORDER BY view_total_remain_debt_customer.customerID`)
+
+    res.status(200).send({
+        totalRemain
+    });
 })
 
 module.exports = router
