@@ -79,11 +79,11 @@ router.get('/getAllPurchases', async (req, res) => {
         tbl_purchases.PurchaseStatus as PurchaseStatus,
         tbl_purchases.paymentType as paymentType,
         tbl_users.userName as user,
-        tbl_purchases.userIDUpdate as userIDUpdate,
-        tbl_purchases.updateAt as updateAt
+        tbl_purchases.userIDCreated as userIDCreated,
+        tbl_purchases.createAt as createAt
             FROM tbl_purchases
             JOIN tbl_suppliers ON (tbl_purchases.supplierID = tbl_suppliers.supplierID)
-            JOIN tbl_users ON (tbl_purchases.userIDUpdate = tbl_users.userID)
+            JOIN tbl_users ON (tbl_purchases.userIDCreated = tbl_users.userID)
             WHERE stockType = 'p'
     `);
     res.status(200).send(purchases);
