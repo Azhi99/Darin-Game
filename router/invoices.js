@@ -299,6 +299,7 @@ router.get('/todaySold', async (req, res) => {
             tbl_invoices.invoiceID,
             tbl_customers.customerName,
             tbl_invoices.totalPrice,
+            tbl_invoices.invoiceType,
             tbl_invoices.discount
         from tbl_invoices join tbl_customers on (tbl_invoices.customerID = tbl_customers.customerID)
         where tbl_invoices.sellStatus = '1' and tbl_invoices.stockType = 's' and date(tbl_invoices.createAt) = '${new Date().toISOString().split('T')[0]}' 
