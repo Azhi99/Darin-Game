@@ -46,4 +46,61 @@ router.get('/totalProfit/:from/:to', async(req,res) => {
     }
 })
 
+// Purchase Report
+
+router.get('/getTodayPurchases', async (req, res) => {
+    const [purchases] = await db.raw(`SELECT
+        tbl_purchases.purchaseID as purchaseID,
+        tbl_suppliers.supplierName as supplierName,
+        tbl_purchases.referenceNo as referenceNo,
+        tbl_purchases.totalPrice as totalPrice,
+        tbl_purchases.amountPay as amountPay,
+        tbl_purchases.discount as discount,
+        tbl_purchases.PurchaseStatus as PurchaseStatus,
+        tbl_purchases.paymentType as paymentType,
+        tbl_users.userName as user
+            FROM tbl_purchases
+            JOIN tbl_suppliers ON (tbl_purchases.supplierID = tbl_suppliers.supplierID)
+            JOIN tbl_users ON (tbl_purchases.userIDUpdate = tbl_users.userID)
+            WHERE DATE(tbl_purchases.createAt) = '${new Date().toISOString().split('T')[0]}' AND stockType = 'p'
+    `);
+    res.status(200).send(purchases);
+});
+
+router.get('/getAllPurchases', async (req, res) => {
+    const [purchases] = await db.raw(`SELECT
+        tbl_purchases.purchaseID as purchaseID,
+        tbl_purchases.supplierID as supplierID,
+        tbl_suppliers.supplierName as supplierName,
+        tbl_purchases.referenceNo as referenceNo,
+        tbl_purchases.totalPrice as totalPrice,
+        tbl_purchases.amountPay as amountPay,
+        tbl_purchases.discount as discount,
+        tbl_purchases.PurchaseStatus as PurchaseStatus,
+        tbl_purchases.paymentType as paymentType,
+        tbl_users.userName as user,
+        tbl_purchases.userIDCreated as userIDCreated,
+        tbl_purchases.createAt as createAt
+            FROM tbl_purchases
+            JOIN tbl_suppliers ON (tbl_purchases.supplierID = tbl_suppliers.supplierID)
+            JOIN tbl_users ON (tbl_purchases.userIDCreated = tbl_users.userID)
+            WHERE stockType = 'p'
+    `);
+    res.status(200).send(purchases);
+});
+
+router.get('/getPurchaseDetail/:purchaseID', async (req, res) => {
+    const [purchaseItems] = await db.raw(`SELECT
+        tbl_items.itemName as itemName,
+        tbl_purchase_items.costPrice as costPrice,
+        tbl_purchase_items.qty as qty,
+        tbl_purchase_items.discount as discount,
+        tbl_purchase_items.costAfterDisc as costAfterDisc
+            FROM tbl_purchase_items 
+            JOIN tbl_items ON (tbl_items.itemID = tbl_purchase_items.itemID)
+            WHERE tbl_purchase_items.purchaseID = ${req.params.purchaseID}
+    `);
+    res.status(200).send(purchaseItems);
+});
+
 module.exports = router
