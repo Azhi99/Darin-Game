@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const path = require('path');
 require('dotenv').config()
 const db = require('./DB/dbConfig');
 
@@ -72,6 +73,10 @@ app.post('/verifyToken', (req, res) => {
     } catch (error) {
         return res.sendStatus(500);
     }
+});
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
 app.listen(process.env.PORT, () => {
