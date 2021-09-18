@@ -372,14 +372,19 @@ router.get('/inStock', async(req,res) => {
         tbl_items.itemName AS itemName,
         IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'p' THEN tbl_stock.qty END), 0) AS purchased,
-        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * -1 AS returnPurchase,
-        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * -1 AS sold,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * (-1) AS returnPurchase,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * (-1) AS sold,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rs' THEN tbl_stock.qty END), 0) AS returnSold,
-        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * -1 AS disposal
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * (-1) AS disposal,
+        tbl_units.unitName
       FROM tbl_items
         LEFT OUTER JOIN tbl_stock
           ON tbl_stock.itemID = tbl_items.itemID
-      GROUP BY tbl_items.itemID;`)
+        LEFT OUTER JOIN tbl_units
+          ON tbl_items.unitID = tbl_units.unitID
+      WHERE tbl_items.deleteStatus = '1'
+      GROUP BY tbl_items.itemID,
+               tbl_units.unitName`)
 
       res.status(200).send(inStock)
     } catch (error) {
