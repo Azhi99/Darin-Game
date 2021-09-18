@@ -252,7 +252,7 @@ router.patch('/updateDisposal/:disposalID', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: null,
-            userID: 3
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
 
         // update to stock

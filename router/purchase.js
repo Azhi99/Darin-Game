@@ -7,6 +7,7 @@ router.post('/', async (req, res) => {
     try {
         const purchase = req.body.data
         purchase.createAt = new Date().toISOString().split("T")[0], purchase.updateAt = purchase.createAt
+        purchase.debtStatus = '0'
         purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
 
         const purchase_items = purchase.purchase_items
