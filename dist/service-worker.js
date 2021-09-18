@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.ee36ff17217fbb96cf6854e72f293637.js"
+  "/precache-manifest.5cdf73fdbb2a97f4ba9577eb3153f67a.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "suly-m"});
