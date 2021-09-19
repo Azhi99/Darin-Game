@@ -67,7 +67,7 @@ router.get('/getTodayPurchases', async (req, res) => {
     res.status(200).send(purchases);
 });
 
-router.get('/getAllPurchases', async (req, res) => {
+router.get('/getAllPurchases/:from/:to', async (req, res) => {
     const [purchases] = await db.raw(`SELECT
         tbl_purchases.purchaseID as purchaseID,
         tbl_purchases.supplierID as supplierID,
@@ -78,13 +78,14 @@ router.get('/getAllPurchases', async (req, res) => {
         tbl_purchases.discount as discount,
         tbl_purchases.PurchaseStatus as PurchaseStatus,
         tbl_purchases.paymentType as paymentType,
+        tbl_purchases.stockType as stockType,
         tbl_users.userName as user,
         tbl_purchases.userIDCreated as userIDCreated,
         tbl_purchases.createAt as createAt
             FROM tbl_purchases
             JOIN tbl_suppliers ON (tbl_purchases.supplierID = tbl_suppliers.supplierID)
             JOIN tbl_users ON (tbl_purchases.userIDCreated = tbl_users.userID)
-            WHERE stockType = 'p'
+            WHERE DATE(tbl_purchases.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
     `);
     res.status(200).send(purchases);
 });

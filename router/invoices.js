@@ -2,7 +2,6 @@ const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
 const keySender = require('node-key-sender');
-const { as } = require('../DB/dbConfig.js');
 const router = express.Router()
 
 router.post('/addInvoice', async(req,res) => {
@@ -346,6 +345,34 @@ router.get('/getTodayInvoices', async(req,res) => {
             totalCash,
             totalDebt
         })            
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.get('/getAllInvoices/:from/:to', async(req,res) => {
+    try {
+        const [allInvoices] = await db.raw(`SELECT
+            tbl_invoices.invoiceID,
+            tbl_invoices.customerID,
+            tbl_customers.customerName,
+            tbl_invoices.userIDUpdate,
+            tbl_users.userName,
+            tbl_invoices.totalPrice,
+            tbl_invoices.totalPay,
+            tbl_invoices.discount,
+            tbl_invoices.stockType,
+            tbl_invoices.invoiceType,
+            tbl_invoices.createAt
+        FROM tbl_invoices
+            INNER JOIN tbl_users
+            ON tbl_invoices.userID = tbl_users.userID
+            INNER JOIN tbl_customers
+            ON tbl_invoices.customerID = tbl_customers.customerID
+            AND tbl_customers.userID = tbl_users.userID
+        WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
+            ORDER BY invoiceID DESC`)
+        res.status(200).send(allInvoices)            
     } catch (error) {
         res.status(500).send(error)
     }

@@ -76,8 +76,8 @@ router.patch('/updateItem/:itemID', async(req,res) => {
             itemPriceRetail: req.body.itemPriceRetail,
             itemPriceWhole: req.body.itemPriceWhole,
             stockAlert: req.body.stockAlert,
-            hideInStock: req.body.hideInStock || 1,
-            showButton: req.body.showButton || 0,
+            hideInStock: req.body.hideInStock || '1',
+            showButton: req.body.showButton || '0',
             note: req.body.note,
             updateAt: new Date(),
             userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
@@ -382,7 +382,7 @@ router.get('/inStock', async(req,res) => {
           ON tbl_stock.itemID = tbl_items.itemID
         LEFT OUTER JOIN tbl_units
           ON tbl_items.unitID = tbl_units.unitID
-      WHERE tbl_items.deleteStatus = '1'
+      WHERE tbl_items.deleteStatus = '1' and tbl_items.hideInStock = '1'
       GROUP BY tbl_items.itemID,
                tbl_units.unitName`)
 
