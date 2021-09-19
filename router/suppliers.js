@@ -10,12 +10,13 @@ router.post('/addSupplier', async(req,res) => {
             phone: req.body.phone,
             address: req.body.address,
             previousBalance: req.body.previousBalance || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1]), 'darinGame2021').userID,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
         })
          res.status(201).send({
              supplierID
          })
     } catch (error) {
+        console.log(error);
         if(error.errno == 1062) {
             return res.status(500).send({
                 message: 'This supplier already exist'
@@ -31,7 +32,7 @@ router.patch('/updateSupplier/:supplierID', async(req,res) => {
             phone: req.body.phone,
             address: req.body.address,
             previousBalance: req.body.previousBalance || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1]), 'darinGame2021').userID,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
         })
     } catch (error) {
         if(error.errno == 1062) {
