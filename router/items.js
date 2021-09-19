@@ -501,4 +501,22 @@ router.get('/moneyInStock', async(req,res) => {
     }
 })
 
+router.get('/getItemForPurchase/:itemCode', async(req,res) => {
+    try {
+        const [getItemForPurchase] = await db('tbl_items').where('itemCode', req.params.itemCode).select([
+            'itemID',
+            'itemCode',
+            'itemName',
+            'costPrice',
+            'itemPriceRetail'
+        ])
+
+        res.status(200).send({
+            getItemForPurchase
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 module.exports = router
