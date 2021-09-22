@@ -133,6 +133,7 @@ router.get('/allItems', async (req, res) => {
         'tbl_items.categoryID',
         'tbl_categories.categoryName',
         'tbl_items.brandID',
+        'tbl_brands.brandName',
         'tbl_items.shelfID',
         'tbl_shelfs.shelfName',
         'tbl_items.unitID',
@@ -149,6 +150,7 @@ router.get('/allItems', async (req, res) => {
     ).from('tbl_items')
      .leftJoin('tbl_categories', 'tbl_items.categoryID', '=', 'tbl_categories.categoryID')
      .leftJoin('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
+     .leftJoin('tbl_brands', 'tbl_items.brandID', '=', 'tbl_brands.brandID')
      .where('tbl_items.deleteStatus', '1')
      .orderBy('tbl_items.itemID', 'desc')
     res.status(200).send(items);
@@ -214,6 +216,40 @@ router.get('/getUnitInfo/:itemID', async (req, res) => {
     ).from('tbl_items')
      .where('tbl_items.itemID', req.params.itemID);
     res.status(200).send(item);
+});
+
+router.get('/getItemForShowInvoice/:search/:wholeSell', async (req, res) => {
+    const [item] = await db.select(
+        'tbl_items.itemID as itemID',
+        'tbl_items.itemName as itemName',
+        'tbl_items.itemCode as itemCode',
+        'tbl_items.perUnit as perUnit',
+        'tbl_items.itemPriceRetail as itemPriceRetail',
+        'tbl_items.itemPriceWhole as itemPriceWhole',
+        'tbl_items.costPrice as costPrice',
+        'tbl_items.shelfID as shelfID',
+        'tbl_shelfs.shelfName as shelfName',
+        'tbl_items.unitID as unitID',
+        'tbl_units.unitName as unitName'
+    ).from('tbl_items')
+     .join('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
+     .join('tbl_units', 'tbl_items.unitID', '=', 'tbl_units.unitID')
+     .where('tbl_items.itemCode', req.params.search)
+     .orWhere('tbl_items.itemName', req.params.search)
+     .andWhere('tbl_items.deleteStatus', '1');
+    if(!item) {
+        return res.status(500).send({
+            message: 'هیچ کاڵایەک نەدۆزرایەوە'
+        });
+    }
+    return res.status(200).send({
+        itemName: item.itemName,
+        itemCode: item.itemCode,
+        productPrice: req.params.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
+        shelfName: item.shelfName,
+        unitName: item.unitName,
+        qty: req.params.wholeSell ? item.perUnit : 1
+    });
 });
 
 // Disposal Route
@@ -371,6 +407,10 @@ router.get('/inStock', async(req,res) => {
         tbl_items.itemID AS itemID,
         tbl_items.itemCode AS itemCode,
         tbl_items.itemName AS itemName,
+        tbl_items.unitID AS unitID,
+        tbl_items.shelfID AS shelfID,
+        tbl_items.brandID AS brandID,
+        tbl_items.categoryID AS categoryID,
         IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'p' THEN tbl_stock.qty END), 0) AS purchased,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * (-1) AS returnPurchase,

@@ -391,7 +391,6 @@ router.get('/getAllInvoices/:from/:to', async(req,res) => {
             ON tbl_invoices.userID = tbl_users.userID
             INNER JOIN tbl_customers
             ON tbl_invoices.customerID = tbl_customers.customerID
-            AND tbl_customers.userID = tbl_users.userID
         WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
             ORDER BY invoiceID DESC`)
         res.status(200).send(allInvoices)            

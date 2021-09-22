@@ -173,6 +173,28 @@ router.get('/', (req, res) => {
         })
 })
 
+router.get('/search/:referenceNo', (req, res) => {
+
+    const fields = [
+        'tp.purchaseID', 'tp.supplierID', 'ts.supplierName',
+        'tp.referenceNo', 'tp.totalPrice', 'tp.paymentType',
+        'tp.purchaseStatus', 'tu.userID', 'tu.userName'
+    ]
+
+    db('tbl_purchases as tp')
+        .where('tp.referenceNo', req.params.referenceNo)
+        .join('tbl_suppliers as ts', 'ts.supplierID', 'tp.supplierID')
+        .join('tbl_users as tu', 'tu.userID', 'tp.userIDUpdate')
+        .select(fields).orderBy([{ column: 'purchaseID', order: 'desc' }])
+        .then(purchases => {
+            db('tbl_purchases').count('* as count')
+                .then(([{ count }]) => {
+                    res.send({ nop: count, purchases })
+                })
+
+        })
+})
+
 
 router.get('/getSupplier', async (req, res) => {
     try {

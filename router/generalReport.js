@@ -108,4 +108,42 @@ router.get('/getPurchaseDetail/:purchaseID', async (req, res) => {
     res.status(200).send(purchaseItems);
 });
 
+router.get('/searchPurchase/:purchaseID', async (req, res) => {
+    const [purchase] = await db.select(
+        'tbl_purchases.purchaseID as purchaseID',
+        'tbl_suppliers.supplierName as supplierName',
+        'tbl_purchases.referenceNo as referenceNo',
+        'tbl_purchases.dollarPrice as dollarPrice',
+        'tbl_purchases.totalPrice as totalPrice',
+        'tbl_purchases.amountPay as amountPay',
+        'tbl_purchases.PurchaseStatus as PurchaseStatus',
+        'tbl_purchases.paymentType as paymentType',
+        'tbl_purchases.stockType as stockType',
+        'tbl_purchases.note as note',
+        'tbl_purchases.createAt as createAt',
+        'tbl_users.fullName as fullName'
+    ).from('tbl_purchases')
+     .join('tbl_suppliers', 'tbl_suppliers.supplierID', '=', 'tbl_purchases.supplierID')
+     .join('tbl_users', 'tbl_users.userID', '=', 'tbl_purchases.userIDCreated')
+     .where('tbl_purchases.purchaseID', req.params.purchaseID);
+
+    const purchaseItems = await db(
+        'tbl_purchase_items.pItemID as pItemID',
+        'tbl_items.itemCode as itemCode',
+        'tbl_items.itemName as itemName',
+        'tbl_purchase_items.costPrice as costPrice',
+        'tbl_purchase_items.qty as qty',
+        'tbl_purchase_items.costAfterDisc as costAfterDisc',
+    ).from('tbl_purchase_items')
+     .join('tbl_items', 'tbl_items.itemID', '=', 'tbl_purchase_items.itemID')
+     .where('tbl_purchase_items.purchaseID', req.params.purchaseID);
+
+    
+    res.status(200).send({
+        purchase,
+        purchaseItems
+    });
+    
+});
+
 module.exports = router
