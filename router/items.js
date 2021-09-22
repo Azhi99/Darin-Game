@@ -145,12 +145,15 @@ router.get('/allItems', async (req, res) => {
         'tbl_items.image',
         'tbl_items.hideInStock',
         'tbl_items.showButton',
-        'tbl_items.note'
+        'tbl_items.note',
+        db.raw('IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock')
     ).from('tbl_items')
      .leftJoin('tbl_categories', 'tbl_items.categoryID', '=', 'tbl_categories.categoryID')
      .leftJoin('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
      .leftJoin('tbl_brands', 'tbl_items.brandID', '=', 'tbl_brands.brandID')
+     .leftJoin('tbl_stock', 'tbl_items.itemID', '=', 'tbl_stock.itemID')
      .where('tbl_items.deleteStatus', '1')
+     .groupBy('tbl_items.itemID')
      .orderBy('tbl_items.itemID', 'desc')
     res.status(200).send(items);
 });
