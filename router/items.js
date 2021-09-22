@@ -562,4 +562,26 @@ router.get('/getItemForPurchase/:itemCode', async(req,res) => {
     }
 })
 
+router.get('/getProfitByItem', async(req,res) => {
+    try {
+        const [getProfitByItem] = await db.raw(`SELECT
+        tbl_items.itemID,
+        tbl_items.itemCode,
+        tbl_items.itemName,
+        (-1) * SUM(tbl_stock.qty) AS totalQtySale,
+        (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS profitByItem
+      FROM tbl_items
+        INNER JOIN tbl_stock
+          ON tbl_items.itemID = tbl_stock.itemID
+      WHERE tbl_stock.sourceType IN ('s', 'rs','d') 
+      GROUP BY tbl_items.itemID`)
+
+      res.status(200).send({
+          getProfitByItem
+      })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 module.exports = router

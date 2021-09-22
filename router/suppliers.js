@@ -55,7 +55,6 @@ router.patch('/deactive/:supplierID', async(req,res) => {
     }
 })
 
-
 router.get('/allSuppliers', async(req,res) => {
     try {
         const [allSuppliers] = await db.raw(`SELECT
@@ -66,15 +65,12 @@ router.get('/allSuppliers', async(req,res) => {
         tbl_suppliers.previousBalance,
         tbl_suppliers.createAt,
         tbl_suppliers.activeStatus,
-        tbl_purchases.paymentType,
-        IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-        tbl_purchases.stockType = 'p' THEN tbl_purchases.totalPrice END), 0) + IFNULL(tbl_suppliers.previousBalance, 0) - (IFNULL(SUM(tbl_return_debt.amountReturn), 0) + IFNULL(SUM(CASE WHEN tbl_purchases.paymentType = 'd' AND
-        tbl_purchases.stockType = 'rp' THEN tbl_purchases.totalPrice END), 0)) AS totalRemain
-      FROM tbl_purchases
-        RIGHT OUTER JOIN tbl_suppliers
-          ON tbl_purchases.supplierID = tbl_suppliers.supplierID
-        LEFT OUTER JOIN tbl_return_debt
-          ON tbl_return_debt.supplierID = tbl_suppliers.supplierID
+        IF((view_total_remain_debt_supplier.totalRemainSupplier - IFNULL(view_total_remain_debt_customer.totalRemainCustomer, 0)) >= 0,(view_total_remain_debt_supplier.totalRemainSupplier - IFNULL(view_total_remain_debt_customer.totalRemainCustomer, 0)), 0) AS totalRemain
+      FROM tbl_suppliers
+        LEFT OUTER JOIN view_total_remain_debt_customer
+          ON tbl_suppliers.supplierName = view_total_remain_debt_customer.customerName
+        LEFT OUTER JOIN view_total_remain_debt_supplier
+          ON tbl_suppliers.supplierName = view_total_remain_debt_supplier.supplierName
       WHERE tbl_suppliers.activeStatus = '1'
       GROUP BY tbl_suppliers.supplierID`)
          res.status(200).send(allSuppliers)
@@ -87,7 +83,7 @@ router.get('/allSuppliers', async(req,res) => {
 // refernce NO is optional
 router.post('/addReturnDebt', async(req,res) => {
     try {
-       const [rdID] = await db('tbl_return_debt').insert({
+        const [rdID] = await db('tbl_return_debt').insert({
             supplierID: req.body.supplierID,
             amountReturn: req.body.amountReturn || 0,
             referenceNO: req.body.referenceNO,
@@ -104,6 +100,18 @@ router.post('/addReturnDebt', async(req,res) => {
                 userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
             });
         }
+
+        await db('tbl_transactions').insert({
+            sourceID: rdID,
+            sourceType: 'rdp',
+            accountID: req.body.supplierID,
+            accountType: 's',
+            accountName: req.body.supplierName,
+            totalPrice: (-1) * (req.body.amountReturn - req.body.discount),
+            transactionType: 'rd',
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        })
+
         res.status(201).send({
             rdID
         });
@@ -135,6 +143,13 @@ router.patch('/updateReturnDebt/:rdID', async(req,res) => {
                 newPurchases
             });
         }
+
+        await db('tbl_transactions').where('sourceID', rdID).andWhere('sourceType', 'rdp').andWhere('accountID', req.body.supplierID)
+        .insert({
+            totalPrice: (-1) * (req.body.amountReturn - req.body.discount),
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        })
+
         return res.sendStatus(200);
         
     } catch (error) {

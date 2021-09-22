@@ -35,11 +35,15 @@ router.get('/moneyMovement/:from/:to', async(req,res) => {
 
 router.get('/totalProfit/:from/:to', async(req,res) => {
     try {
-        const [totalProfit] = await db.raw(`SELECT tbl_stock.sourceID, tbl_stock.sourceType, (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS totalProfit, (-1) * SUM(tbl_stock.itemPrice * tbl_stock.qty) AS totalSale FROM tbl_stock WHERE tbl_stock.sourceType IN ('s', 'rs') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}" GROUP BY tbl_stock.sourceID, tbl_stock.sourceType`)
-        const [[{totalAll}]] = await db.raw(`select (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS totalAll  FROM tbl_stock WHERE tbl_stock.sourceType IN ('s', 'rs') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}"`)
+        const [totalProfit] = await db.raw(`SELECT tbl_stock.sourceID, tbl_stock.sourceType, (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS totalProfit, (-1) * SUM(tbl_stock.itemPrice * tbl_stock.qty) AS totalSale, ifnull( (-1) * sum((case when tbl_stock.sourceType = 's' and (tbl_stock.itemPrice - tbl_stock.costPrice) < 0 THEN tbl_stock.qty *(tbl_stock.itemPrice - tbl_stock.costPrice) end)),0) as totalLoss FROM tbl_stock WHERE tbl_stock.sourceType IN ('s', 'rs','d') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}" GROUP BY tbl_stock.sourceID, tbl_stock.sourceType`)
+        const [[{totalAll}]] = await db.raw(`select ifnull((-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)),0) AS totalAll  FROM tbl_stock WHERE tbl_stock.sourceType IN ('s', 'rs','d') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}"`)
+        const [[{totalDisposal}]] = await db.raw(`select ifnull((-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)),0) AS totalDisposal  FROM tbl_stock WHERE tbl_stock.sourceType IN ('d') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}"`)
+        const [[{totalLoss}]] = await db.raw(`select ifnull( (-1) * sum((case when tbl_stock.sourceType = 's' and (tbl_stock.itemPrice - tbl_stock.costPrice) < 0 THEN tbl_stock.qty *(tbl_stock.itemPrice - tbl_stock.costPrice) end)),0) as totalLoss  FROM tbl_stock WHERE tbl_stock.sourceType IN ('s') and date(tbl_stock.createAt) between "${req.params.from}" and "${req.params.to}"`)
         res.status(200).send({
             totalProfit,
-            totalAll
+            totalAll,
+            totalDisposal,
+            totalLoss
         })
     } catch (error) {
         res.status(500).send(error)
