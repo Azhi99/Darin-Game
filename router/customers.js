@@ -76,24 +76,17 @@ router.get('/allCustomers', async(req,res) => {
         tbl_customers.createAt,
         tbl_customers.activeStatus,
         tbl_users.userName,
-        IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' THEN tbl_invoices.totalPrice END), 0) + tbl_customers.previousDebt AS totalDebt,
-        IFNULL(tbl_return_debt_customer.amountReturn,0) AS totalReturn,
-        IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
-      tbl_invoices.stockType = 's' THEN tbl_invoices.totalPrice END), 0) + IFNULL(tbl_customers.previousDebt, 0) - (IFNULL(tbl_return_debt_customer.amountReturn, 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
-      tbl_invoices.stockType = 'rs' THEN tbl_invoices.totalPrice END), 0) + IFNULL(SUM(CASE WHEN tbl_invoices.invoiceType = 'd' AND
-      tbl_invoices.stockType = 's' THEN tbl_invoices.totalPay END), 0)) AS totalRemain
+        IF(view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0) >= 0,
+              view_total_remain_debt_customer.totalRemainCustomer - IFNULL(view_total_remain_debt_supplier.totalRemainSupplier,0),0) AS totalRemain
       FROM tbl_customers
         INNER JOIN tbl_users
           ON tbl_customers.userID = tbl_users.userID
-        LEFT OUTER JOIN tbl_invoices
-          ON tbl_invoices.customerID = tbl_customers.customerID
-          AND tbl_invoices.userID = tbl_users.userID
-        LEFT OUTER JOIN tbl_return_debt_customer
-          ON tbl_return_debt_customer.customerID = tbl_customers.customerID
-          AND tbl_return_debt_customer.userID = tbl_users.userID
+        LEFT OUTER JOIN view_total_remain_debt_customer
+          ON tbl_customers.customerName = view_total_remain_debt_customer.customerName
+        LEFT OUTER JOIN view_total_remain_debt_supplier
+          ON tbl_customers.customerName = view_total_remain_debt_supplier.supplierName
       WHERE tbl_customers.activeStatus = '1'
-      GROUP BY tbl_customers.customerID,
-               tbl_return_debt_customer.amountReturn`)
+      GROUP BY tbl_customers.customerID`)
            res.status(200).send(allCustomers)
     } catch (error) {
         res.status(500).send(error)   
@@ -126,6 +119,7 @@ router.post('/addReturnDebt', async(req,res) => {
             invoiceNumbers: req.body.invoiceNumbers.join(',') || null,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
+
         // if(req.body.invoiceNumbers.length > 0) {
         //     await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
         //         invoiceType: 'c',
@@ -133,6 +127,19 @@ router.post('/addReturnDebt', async(req,res) => {
         //         userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         //     });
         // }
+
+        if(req.body.customerID != 1) {
+            await db('tbl_transactions').insert({
+                sourceID: rdcID,
+                sourceType: 'rds',
+                accountID: req.body.customerID,
+                accountType: 'c',
+                accountName: req.body.customerName,
+                totalPrice: req.body.amountReturn - req.body.discount,
+                transactionType: 'rd',
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            })
+        }
         res.status(201).send({
             rdcID
         })
@@ -148,6 +155,13 @@ router.patch('/updateReturnDebt/:rdcID', async(req,res) => {
             discount: req.body.discount || 0,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
+        if(req.body.customerID != 1) {
+            await db('tbl_transactions').where('sourceID', req.params.rdcID).andWhere('sourceType', 'rds').andWhere('accountID', req.body.customerID)
+            .update({
+                totalPrice: req.body.amountReturn - req.body.discount,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            })
+        }
         if(req.body.invoiceNumbers.length > 0) {
             const [{oldInvoices}] = await db('tbl_return_debt_customer').where('rdcID', req.params.rdcID).select(['invoiceNumbers as oldInvoices']);
             const newInvoices = oldInvoices + ',' + req.body.invoiceNumbers.join(',');

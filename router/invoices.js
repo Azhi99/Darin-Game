@@ -114,6 +114,14 @@ router.patch('/updateInvoice/:invoiceID', async(req,res)=> {
             discount: req.body.discount || 0,
             userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
         })
+        if(req.body.customerID != 1) {
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', 's').andWhere('accountID', req.body.customerID)
+            .update({
+                totalPrice: req.body.stockType == 's' ? req.body.totalPrice * (-1) : req.body.totalPrice,
+                totalPay: req.body.totalPay,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            })  
+        }
         res.sendStatus(200)
     } catch (error) {
         res.status(500).send(error)
@@ -236,6 +244,20 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
              .where('invoiceID', req.params.invoiceID);
         }
         await db('tbl_stock').insert(items);
+
+        if(req.body.customerID != 1) {
+            await db('tbl_transactions').insert({
+                sourceID: req.params.invoiceID,
+                sourceType: req.body.stockType,
+                accountID: req.body.customerID,
+                accountType: 'c',
+                accountName: req.body.customerName,
+                totalPrice: req.body.stockType == 's' ? req.body.totalPrice * (-1) : req.body.totalPrice,
+                totalPay: req.body.totalPay,
+                transactionType: req.body.invoiceType,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            })
+        }
         res.sendStatus(200);
     } catch (error) {
         res.status(500).send(error);

@@ -11,11 +11,26 @@ router.post('/', async (req, res) => {
         purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
 
         const purchase_items = purchase.purchase_items
+        const supplierName = purchase.supplierName
+        delete purchase.supplierName
         delete purchase.purchase_items
 
         //insert purchase and return id of it
         const [purchase_id] = await db('tbl_purchases').insert(purchase)
 
+        //insert to transaction  
+        await db('tbl_transactions').insert({
+                sourceID: purchase_id,
+                sourceType: req.body.data.stockType,
+                accountID: req.body.data.supplierID,
+                accountType: 's',
+                accountName: supplierName,
+                totalPrice: req.body.data.stockType == 'p' ? req.body.data.totalPrice  : req.body.data.totalPrice * (-1),
+                totalPay: req.body.data.amountPay,
+                transactionType: req.body.data.paymentType,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        })
+       
         await purchase_items.forEach(async (item) => {
             await db('tbl_items').update({ itemPriceRetail: item.itemPriceRetail, costPrice: item.costPrice }).where('itemID', '=', item.itemID)
             delete item.itemPriceRetail
@@ -74,9 +89,16 @@ router.patch('/updatePurchase', async (req, res) => {
     delete purchase.purchaseID
     purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
     purchase.updateAt = new Date().toISOString().split("T")[0]
-
+    console.log(purchase);
     await db('tbl_purchases').update(purchase).where('purchaseID', '=', purchaseID)
-
+ 
+        await db('tbl_transactions').where('sourceID', purchaseID).andWhere('sourceType', purchase.stockType).andWhere('accountID', purchase.supplierID)
+        .update({
+                totalPrice: purchase.stockType == 'p' ? purchase.totalPrice  : purchase.totalPrice * (-1),
+                totalPay: purchase.amountPay,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        })
+       
     res.sendStatus(200)
 })
 router.patch('/updateItem', async (req, res) => {
