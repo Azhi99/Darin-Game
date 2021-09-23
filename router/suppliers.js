@@ -1,6 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
+const { as } = require('../DB/dbConfig.js');
 const router = express.Router()
 
 router.post('/addSupplier', async(req,res) => {
@@ -229,6 +230,75 @@ router.get('/debtSupToCust', async(req,res) => {
      res.status(200).send({
          debtSupToCust
      })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.get('/accountStatement/:from/:to/:accountType', async(req,res) => {
+    try {
+        const [accountStatement] = await db.raw(`SELECT
+        tbl_transactions.sourceID,
+        tbl_transactions.sourceType,
+        tbl_transactions.accountName,
+        tbl_transactions.accountType,
+        tbl_transactions.totalPrice,
+        tbl_transactions.totalPay,
+        tbl_transactions.transactionType,
+        tbl_transactions.createAt
+      FROM tbl_transactions
+       where (date(tbl_transactions.createAt) between '${req.params.from}' and '${req.params.to}') 
+       and tbl_transactions.accountType = '${req.params.accountType}'
+       order by tbl_transactions.createAt`)
+
+       res.status(200).send({
+           accountStatement
+       })
+    } catch (error) {
+        res.status(500).send(error)
+        
+    }
+})
+
+router.get('/accountStatementPartner/:from/:to', async(req,res) => {
+    try {
+        const [accountStatementPartner] = await db.raw(`SELECT
+        tbl_transactions.sourceID,
+        tbl_transactions.sourceType,
+        tbl_transactions.accountName,
+        tbl_transactions.accountType,
+        tbl_transactions.totalPrice,
+        tbl_transactions.totalPay,
+        tbl_transactions.transactionType,
+        tbl_transactions.createAt
+        FROM tbl_suppliers
+        INNER JOIN tbl_transactions
+            ON tbl_suppliers.supplierName = tbl_transactions.accountName
+        INNER JOIN tbl_customers
+            ON tbl_customers.customerName = tbl_transactions.accountName
+            where (date(tbl_transactions.createAt) between '${req.params.from}' and '${req.params.to}')
+            order by tbl_transactions.createAt`)
+            
+        res.status(200).send({
+            accountStatementPartner
+        })    
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.get('/allPartnerName', async(req,res) => {
+    try {
+        const [allPartnerName] = await db.raw(`SELECT
+        tbl_transactions.accountName
+      FROM tbl_suppliers
+        INNER JOIN tbl_transactions
+          ON tbl_suppliers.supplierName = tbl_transactions.accountName
+        INNER JOIN tbl_customers
+          ON tbl_customers.customerName = tbl_transactions.accountName
+      GROUP BY tbl_transactions.accountName`)
+            
+            res.status(200).send(allPartnerName)
     } catch (error) {
         res.status(500).send(error)
     }
