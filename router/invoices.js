@@ -1,6 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const keySender = require('node-key-sender');
 const router = express.Router()
 
@@ -35,7 +36,7 @@ router.post('/addInvoice', async(req,res) => {
         if(!req.body.invoiceID) {
             const [addInvoice] = await db('tbl_invoices').insert({
                 customerID: req.body.customerID || 1,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
                 totalPrice: req.body.totalPrice || 0,
                 totalPay: req.body.totalPay || 0, 
                 discount: req.body.discount || 0,
@@ -43,7 +44,7 @@ router.post('/addInvoice', async(req,res) => {
                 stockType: req.body.stockType || 's',
                 sellStatus: '0',
                 invoiceType: req.body.invoiceType || 'c',
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             })
 
             const [invdID] = await db('tbl_invoice_item').insert({
@@ -112,14 +113,14 @@ router.patch('/updateInvoice/:invoiceID', async(req,res)=> {
             totalPrice: req.body.totalPrice || 0,
             totalPay: req.body.totalPay || 0,
             discount: req.body.discount || 0,
-            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         if(req.body.customerID != 1) {
             await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', 's').andWhere('accountID', req.body.customerID)
             .update({
                 totalPrice: req.body.stockType == 's' ? req.body.totalPrice * (-1) : req.body.totalPrice,
                 totalPay: req.body.totalPay,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             })  
         }
         res.sendStatus(200)
@@ -217,7 +218,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
             stockType: req.body.stockType || 's',
             sellStatus: '1',
             invoiceType: req.body.invoiceType || 'c',
-            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
     
         var items = null;
@@ -255,7 +256,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 totalPrice: req.body.stockType == 's' ? req.body.totalPrice * (-1) : req.body.totalPrice,
                 totalPay: req.body.totalPay,
                 transactionType: req.body.invoiceType,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             })
         }
         res.sendStatus(200);

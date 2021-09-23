@@ -1,6 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const router = express.Router()
 
 router.post('/', async (req, res) => {
@@ -8,7 +9,7 @@ router.post('/', async (req, res) => {
         const purchase = req.body.data
         purchase.createAt = new Date().toISOString().split("T")[0], purchase.updateAt = purchase.createAt
         purchase.debtStatus = '0'
-        purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
 
         const purchase_items = purchase.purchase_items
         const supplierName = purchase.supplierName
@@ -28,7 +29,7 @@ router.post('/', async (req, res) => {
                 totalPrice: req.body.data.stockType == 'p' ? req.body.data.totalPrice  : req.body.data.totalPrice * (-1),
                 totalPay: req.body.data.amountPay,
                 transactionType: req.body.data.paymentType,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
        
         await purchase_items.forEach(async (item) => {
@@ -87,7 +88,7 @@ router.patch('/updatePurchase', async (req, res) => {
     const purchase = req.body.data
     purchaseID = purchase.purchaseID
     delete purchase.purchaseID
-    purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+    purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
     purchase.updateAt = new Date().toISOString().split("T")[0]
     console.log(purchase);
     await db('tbl_purchases').update(purchase).where('purchaseID', '=', purchaseID)
@@ -96,7 +97,7 @@ router.patch('/updatePurchase', async (req, res) => {
         .update({
                 totalPrice: purchase.stockType == 'p' ? purchase.totalPrice  : purchase.totalPrice * (-1),
                 totalPay: purchase.amountPay,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
        
     res.sendStatus(200)

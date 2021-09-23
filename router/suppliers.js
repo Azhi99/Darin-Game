@@ -1,7 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
-const { as } = require('../DB/dbConfig.js');
+require('dotenv').config();
 const router = express.Router()
 
 router.post('/addSupplier', async(req,res) => {
@@ -11,8 +11,18 @@ router.post('/addSupplier', async(req,res) => {
             phone: req.body.phone,
             address: req.body.address,
             previousBalance: req.body.previousBalance || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
         })
+        await db('tbl_transactions').insert({
+            sourceID: supplierID,
+            sourceType: 'pds',
+            accountID: supplierID,
+            accountType: 's',
+            accountName: req.body.supplierName,
+            totalPrice: req.body.previousBalance,
+            transactionType: 'd',
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
+        });
          res.status(201).send({
              supplierID
          })
@@ -33,8 +43,11 @@ router.patch('/updateSupplier/:supplierID', async(req,res) => {
             phone: req.body.phone,
             address: req.body.address,
             previousBalance: req.body.previousBalance || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
         })
+        await db('tbl_transactions').where('sourceID', req.params.supplierID).andWhere('sourceType', 'pds').update({
+            totalPrice: req.body.previousBalance
+        });
     } catch (error) {
         if(error.errno == 1062) {
             res.status(500).send({
@@ -91,14 +104,14 @@ router.post('/addReturnDebt', async(req,res) => {
             discount: req.body.discount,
             dollarPrice: req.body.dollarPrice,
             purchaseNumbers: req.body.purchaseNumbers.length ? req.body.purchaseNumbers.join(',') : null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         
         if(req.body.purchaseNumbers.length) {
             await db('tbl_purchases').whereIn('purchaseID', req.body.purchaseNumbers).update({
                 debtStatus: '1',
                 updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             });
         }
 
@@ -110,7 +123,7 @@ router.post('/addReturnDebt', async(req,res) => {
             accountName: req.body.supplierName,
             totalPrice: (-1) * (req.body.amountReturn - req.body.discount),
             transactionType: 'rd',
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         res.status(201).send({
@@ -148,7 +161,7 @@ router.patch('/updateReturnDebt/:rdID', async(req,res) => {
         await db('tbl_transactions').where('sourceID', rdID).andWhere('sourceType', 'rdp').andWhere('accountID', req.body.supplierID)
         .insert({
             totalPrice: (-1) * (req.body.amountReturn - req.body.discount),
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         return res.sendStatus(200);

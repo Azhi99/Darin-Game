@@ -1,6 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const router = express.Router()
 
 router.post('/addCustomer', async(req,res) => {
@@ -11,8 +12,18 @@ router.post('/addCustomer', async(req,res) => {
             address: req.body.address || null,
             previousDebt: req.body.previousDebt || 0,
             limitDebt: req.body.limitDebt || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
+        await db('tbl_transactions').insert({
+            sourceID: customerID,
+            sourceType: 'pdc',
+            accountID: customerID,
+            accountType: 'c',
+            accountName: req.body.customerName,
+            totalPrice: -1 * (req.body.previousDebt),
+            transactionType: 'd',
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
+        });
         res.status(201).send({
             customerID
         })
@@ -34,8 +45,11 @@ router.patch('/updateCustomer/:customerID', async(req,res) => {
             address: req.body.address,
             previousDebt: req.body.previousDebt || 0,
             limitDebt: req.body.limitDebt || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
+        await db('tbl_transactions').where('sourceID', req.params.customerID).andWhere('sourceType', 'pdc').update({
+            totalPrice: -1 * (req.body.previousDebt)
+        });
          res.sendStatus(200)
     } catch (error) {
         res.status(500).send(error)
@@ -117,14 +131,14 @@ router.post('/addReturnDebt', async(req,res) => {
             discount: req.body.discount || 0,
             dollarPrice: req.body.dollarPrice || 0,
             invoiceNumbers: req.body.invoiceNumbers.join(',') || null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         // if(req.body.invoiceNumbers.length > 0) {
         //     await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
         //         invoiceType: 'c',
         //         updateAt: new Date(),
-        //         userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+        //         userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         //     });
         // }
 
@@ -137,7 +151,7 @@ router.post('/addReturnDebt', async(req,res) => {
                 accountName: req.body.customerName,
                 totalPrice: req.body.amountReturn - req.body.discount,
                 transactionType: 'rd',
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             })
         }
         res.status(201).send({
@@ -153,13 +167,13 @@ router.patch('/updateReturnDebt/:rdcID', async(req,res) => {
         await db('tbl_return_debt_customer').where('rdcID', req.params.rdcID).update({
             amountReturn: req.body.amountReturn || 0,
             discount: req.body.discount || 0,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         if(req.body.customerID != 1) {
             await db('tbl_transactions').where('sourceID', req.params.rdcID).andWhere('sourceType', 'rds').andWhere('accountID', req.body.customerID)
             .update({
                 totalPrice: req.body.amountReturn - req.body.discount,
-                userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             })
         }
         if(req.body.invoiceNumbers.length > 0) {
@@ -171,7 +185,7 @@ router.patch('/updateReturnDebt/:rdcID', async(req,res) => {
             await db('tbl_invoices').whereIn('invoiceID', req.body.invoiceNumbers).update({
                 invoiceType: 'c',
                 updateAt: new Date(),
-                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+                userIDUpdate: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
             });
             return res.status(200).send({
                 newInvoices

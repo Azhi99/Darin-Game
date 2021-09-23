@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const router = express.Router()
 
 const fileStorage = multer.diskStorage({
@@ -45,8 +46,8 @@ router.post('/addItem', async(req,res) => {
                     hideInStock: req.body.hideInStock || 1,
                     showButton: req.body.showButton || 0,
                     note: req.body.note || null,
-                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
-                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
                 })
                 return res.status(200).send({
                     itemID,
@@ -80,7 +81,7 @@ router.patch('/updateItem/:itemID', async(req,res) => {
             showButton: req.body.showButton || '0',
             note: req.body.note,
             updateAt: new Date(),
-            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         res.sendStatus(200)
     } catch (error) {
@@ -145,12 +146,15 @@ router.get('/allItems', async (req, res) => {
         'tbl_items.image',
         'tbl_items.hideInStock',
         'tbl_items.showButton',
-        'tbl_items.note'
+        'tbl_items.note',
+        db.raw('IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock')
     ).from('tbl_items')
      .leftJoin('tbl_categories', 'tbl_items.categoryID', '=', 'tbl_categories.categoryID')
      .leftJoin('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
      .leftJoin('tbl_brands', 'tbl_items.brandID', '=', 'tbl_brands.brandID')
+     .leftJoin('tbl_stock', 'tbl_items.itemID', '=', 'tbl_stock.itemID')
      .where('tbl_items.deleteStatus', '1')
+     .groupBy('tbl_items.itemID')
      .orderBy('tbl_items.itemID', 'desc')
     res.status(200).send(items);
 });
@@ -260,7 +264,7 @@ router.post('/addDisposal', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         // send to stock
@@ -288,7 +292,7 @@ router.patch('/updateDisposal/:disposalID', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         // update to stock
