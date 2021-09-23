@@ -1,5 +1,7 @@
 const db = require('../DB/dbConfig.js')
 const express = require('express')
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const router = express.Router()
 
 //type of Expense Router
@@ -72,8 +74,8 @@ router.post('/addExpense', async(req,res) => {
             priceExpense$: req.body.priceExpense$ || 0,
             dollarPrice: req.body.dollarPrice || 0,
             note: req.body.note,
-            userIDCreated: 3,
-            userIDUpdated: 3
+            userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         res.status(201).send({
         expenseID
@@ -92,7 +94,7 @@ router.patch('/updateExpense/:expenseID', async(req,res) => {
             dollarPrice: req.body.dollarPrice || 0,
             note: req.body.note || null,
             updaetAt: new Date(),
-            userIDUpdated: 3
+            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
          res.sendStatus(200)
     } catch (error) {

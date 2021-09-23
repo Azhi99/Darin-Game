@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const router = express.Router()
 
 const fileStorage = multer.diskStorage({
@@ -45,8 +46,8 @@ router.post('/addItem', async(req,res) => {
                     hideInStock: req.body.hideInStock || 1,
                     showButton: req.body.showButton || 0,
                     note: req.body.note || null,
-                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
-                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID,
+                    userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+                    userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
                 })
                 return res.status(200).send({
                     itemID,
@@ -80,7 +81,7 @@ router.patch('/updateItem/:itemID', async(req,res) => {
             showButton: req.body.showButton || '0',
             note: req.body.note,
             updateAt: new Date(),
-            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         res.sendStatus(200)
     } catch (error) {
@@ -263,7 +264,7 @@ router.post('/addDisposal', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         // send to stock
@@ -291,7 +292,7 @@ router.patch('/updateDisposal/:disposalID', async(req,res) => {
             costPrice: req.body.costPrice || 0,
             qty: req.body.qty || 0,
             expiryDate: null,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], 'darinGame2021')).userID
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         // update to stock
