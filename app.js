@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const path = require('path');
 require('dotenv').config()
-const db = require('./DB/dbConfig');
+const db = require('./DB/dbConfig'); 
 
 const app = express()
 
