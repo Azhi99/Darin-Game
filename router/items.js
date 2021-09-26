@@ -570,11 +570,21 @@ router.get('/getProfitByItem', async(req,res) => {
         tbl_items.itemCode,
         tbl_items.itemName,
         (-1) * SUM(tbl_stock.qty) AS totalQtySale,
-        (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS profitByItem
+        (-1) * SUM(tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice)) AS profitByItem,
+        SUM(IF(tbl_stock.itemPrice - tbl_stock.costPrice <= 0, tbl_stock.qty * (tbl_stock.itemPrice - tbl_stock.costPrice), 0)) AS totalLoss,
+        tbl_categories.categoryName,
+        tbl_brands.brandName,
+        tbl_shelfs.shelfName
       FROM tbl_items
         INNER JOIN tbl_stock
           ON tbl_items.itemID = tbl_stock.itemID
-      WHERE tbl_stock.sourceType IN ('s', 'rs','d') 
+        LEFT OUTER JOIN tbl_categories
+          ON tbl_items.categoryID = tbl_categories.categoryID
+        LEFT OUTER JOIN tbl_brands
+          ON tbl_items.brandID = tbl_brands.brandID
+          LEFT OUTER JOIN tbl_shelfs
+          ON tbl_items.shelfID = tbl_shelfs.shelfID
+      WHERE tbl_stock.sourceType IN ('s', 'rs', 'd')
       GROUP BY tbl_items.itemID`)
 
       res.status(200).send({
