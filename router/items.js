@@ -68,7 +68,7 @@ router.patch('/updateItem/:itemID', async(req,res) => {
         await db('tbl_items').where('itemID', req.params.itemID).update({
             itemCode: req.body.itemCode,
             itemName: req.body.itemName,
-            CategoryID: req.body.CategoryID,
+            categoryID: req.body.categoryID,
             brandID: req.body.brandID,
             shelfID: req.body.shelfID,
             unitID: req.body.unitID,

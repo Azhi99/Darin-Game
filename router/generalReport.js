@@ -146,4 +146,71 @@ router.get('/searchPurchase/:purchaseID', async (req, res) => {
     
 });
 
+router.get('/getTopSaleByCat', async(req,res) => {
+    try {
+        const [getTopSaleByCat] = await db.raw(`SELECT
+                tbl_categories.categoryName,
+                (-1) * SUM(tbl_stock.qty) AS totalSale
+            FROM tbl_stock
+                INNER JOIN tbl_items
+                ON tbl_stock.itemID = tbl_items.itemID
+                INNER JOIN tbl_categories
+                ON tbl_items.categoryID = tbl_categories.categoryID
+            WHERE tbl_stock.sourceType IN ('s', 'rs')
+            GROUP BY tbl_categories.categoryID
+                ORDER BY 2 DESC`)
+        res.status(200).send({
+            getTopSaleByCat
+        })        
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.get('/getSaleAndPurchase', async(req,res) => {
+    try {
+        var date = new Date()
+        const [[{todaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS todaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{todayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS todayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousOneDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousOneDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousOneDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousOneDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousTwoDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousTwoDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousTwoDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousTwoDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousThreeDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousThreeDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousThreeDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousThreeDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousFourDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousFourDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousFourDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousFourDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousFiveDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousFiveDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousFiveDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousFiveDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        date.setDate(date.getDate() - 1)
+        const [[{PreviousSixDaySale}]] = await db.raw(`SELECT -1 * ifnull(SUM(tbl_stock.qty * tbl_stock.itemPrice),0) AS PreviousSixDaySale FROM tbl_stock WHERE tbl_stock.sourceType = 's' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        const [[{PreviousSixDayPurchase}]] = await db.raw(`SELECT ifnull(SUM(tbl_stock.qty * tbl_stock.costPrice),0) AS PreviousSixDayPurchase FROM tbl_stock WHERE tbl_stock.sourceType = 'p' and date(tbl_stock.createAt) = "${date.toISOString().split('T')[0]}" `)
+        
+        res.status(200).send({
+            todaySale,
+            PreviousOneDaySale,
+            PreviousTwoDaySale,
+            PreviousThreeDaySale,
+            PreviousFourDaySale,
+            PreviousFiveDaySale,
+            PreviousSixDaySale,
+            //purchases
+            todayPurchase,
+            PreviousOneDayPurchase,
+            PreviousTwoDayPurchase,
+            PreviousThreeDayPurchase,
+            PreviousFourDayPurchase,
+            PreviousFiveDayPurchase,
+            PreviousSixDayPurchase
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 module.exports = router
