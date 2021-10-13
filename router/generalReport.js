@@ -158,7 +158,8 @@ router.get('/getTopSaleByCat', async(req,res) => {
                 ON tbl_items.categoryID = tbl_categories.categoryID
             WHERE tbl_stock.sourceType IN ('s', 'rs')
             GROUP BY tbl_categories.categoryID
-                ORDER BY 2 DESC`)
+                ORDER BY 2 DESC
+                limit 10`)
         res.status(200).send({
             getTopSaleByCat
         })        
