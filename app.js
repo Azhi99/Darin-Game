@@ -3,6 +3,8 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const path = require('path');
+const nodemailer = require('nodemailer');
+const mysqldump = require('mysqldump');
 require('dotenv').config()
 const db = require('./DB/dbConfig'); 
 
@@ -76,6 +78,39 @@ app.post('/verifyToken', (req, res) => {
         return res.sendStatus(500);
     }
 });
+
+// const transporter = nodemailer.createTransport({
+//     service: 'gmail',
+//     auth: {
+//         user: 'azhi.jabar99@gmail.com',
+//         pass: process.env.SECRET
+//     }
+// });
+
+// setInterval(async () => {
+//     await mysqldump({
+//         connection: {
+//           host: process.env.HOST,
+//           user: process.env.USER,
+//           password: process.env.PASS,
+//           database: process.env.DB,
+//         },
+//         dumpToFile: './darin_game.sql'
+//       });
+//       transporter.sendMail({
+//         from: 'azhi.jabar99@gmail.com',
+//         to: 'azhijabar.aj@gmail.com',
+//         attachments: [
+//             { filename: 'darin_game.sql', path: './darin_game.sql' }
+//         ]
+//       }, function(err, data) {
+//         if(err) {
+//             console.log(err);
+//         } else {
+//             console.log(data);
+//         }
+//       });
+// }, 10000)
 
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist/index.html'));

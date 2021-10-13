@@ -70,21 +70,32 @@ router.post('/addInvoice', async(req,res) => {
             })
         } else {
            const [itemID] = await db('tbl_invoice_item').where('invoiceID', req.body.invoiceID).andWhere('itemID', item.itemID).select(['itemID as itemID'])
+           const qty = req.body.wholeSell ? item.perUnit : 1;
             if(!itemID) {
                 const [invdID] = await db('tbl_invoice_item').insert({
                     invoiceID: req.body.invoiceID,
                     itemID: item.itemID,
-                    qty: req.body.wholeSell ? item.perUnit : 1,
+                    qty,
                     productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
                     costPrice: item.costPrice,
                     shelfID: item.shelfID,
                     unitID: item.unitID
                 })
+                if(req.body.sellStatus == 1) {
+                    await db('tbl_stock').insert({
+                        sourceID: req.body.invoiceID,
+                        sourceType: req.body.stockType,
+                        itemID: item.itemID,
+                        qty: req.body.stockType == 's' ? qty * (-1) : qty,
+                        itemPirce: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
+                        costPrice: item.costPrice
+                    });
+                }
                 return res.status(200).send({
                     invdID,
                     itemID: item.itemID,
                     itemName: item.itemName,
-                    qty: req.body.wholeSell ? item.perUnit : 1,
+                    qty,
                     productPrice: req.body.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
                     shelfName: item.shelfName,
                     unitName: item.unitName,
@@ -92,11 +103,16 @@ router.post('/addInvoice', async(req,res) => {
                 });
             } else {
                 await db('tbl_invoice_item').where('invoiceID', req.body.invoiceID).andWhere('itemID', item.itemID).update({
-                    qty: db.raw('qty + ' + Number(req.body.wholeSell ? item.perUnit : 1))
+                    qty: db.raw('qty + ' + Number(qty))
                 })
+                if(req.body.sellStatus == 1) {
+                    await db('tbl_stock').where('sourceID', req.body.invoiceID).andWhere('sourceType', req.body.stockType).andWhere('itemID', item.itemID).update({
+                        qty: req.body.stockType == 's' ? db.raw('qty - ' + Number(qty)) : db.raw('qty + ' + Number(qty)),
+                    });
+                }
                 res.status(200).send({
                     itemID: item.itemID,
-                    qty: req.body.wholeSell ? item.perUnit : 1,
+                    qty,
                     message: 'Item Updated'
                 });
             }
@@ -136,20 +152,58 @@ router.get('/enterKey', (req, res) => {
     }, 400)
 });
 
-router.patch('/increaseItem/:invdID', async (req, res) => {
-    await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
-        qty: db.raw('qty + 1')
-    });
-    res.sendStatus(200);
+router.patch('/increaseItem/:invdID/:invoiceID', async (req, res) => {
+    try {
+        await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
+            qty: db.raw('qty + 1')
+        });
+        if(req.body.sellStatus == 1) {
+            await db('tbl_stock')
+                 .where('sourceID', req.params.invoiceID)
+                 .andWhere('sourceType', req.body.stockType)
+                 .andWhere('itemID', req.body.itemID)
+                 .update({
+                    qty: db.raw('qty + 1')
+                })
+            await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
+                totalPrice: req.body.totalPrice
+            });
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', 's').update({
+                totalPrice: req.body.stockType == 's' ? (req.body.totalPrice * (-1)) : req.body.totalPrice
+            })
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(500).send(error);
+    }
 });
 
 router.patch('/decreaseItem/:invoiceID/:invdID', async (req, res) => {
-    await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
-        qty: db.raw('qty - 1')
-    });
-    return res.status(200).send({
-        message: 'Item Decreased'
-    });
+    try {
+        await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
+            qty: db.raw('qty - 1')
+        });
+        if(req.body.sellStatus == 1) {
+            await db('tbl_stock')
+                 .where('sourceID', req.params.invoiceID)
+                 .andWhere('sourceType', req.body.stockType)
+                 .andWhere('itemID', req.body.itemID)
+                 .update({
+                    qty: db.raw('qty - 1')
+                })
+            await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
+                totalPrice: req.body.totalPrice
+            });
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', 's').update({
+                totalPrice: req.body.stockType == 's' ? (req.body.totalPrice * (-1)) : req.body.totalPrice
+            })
+        }
+        return res.status(200).send({
+            message: 'Item Decreased'
+        });
+    } catch (error) {
+        return res.status(500).send(error);
+    }
 });
 
 router.patch('/changePricetoWhole/:invdID', async (req, res) => {
@@ -163,27 +217,70 @@ router.patch('/changePricetoWhole/:invdID', async (req, res) => {
     }
 });
 
-router.patch('/changeQty/:invdID', async (req, res) => {
+router.patch('/changeQty/:invdID/:invoiceID', async (req, res) => {
     try {
         await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
             qty: req.body.qty
         });
+        if(req.body.sellStatus == 1) {
+            await db('tbl_stock')
+                 .where('sourceID', req.params.invoiceID)
+                 .andWhere('sourceType', req.body.stockType)
+                 .andWhere('itemID', req.body.itemID)
+                 .update({
+                    qty: req.body.stockType == 's' ? (req.body.qty * (-1)) : (req.body.qty)
+                })
+
+            await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
+                totalPrice: req.body.totalPrice
+            });
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', req.body.stockType).update({
+                totalPrice: req.body.stockType == 's' ? (req.body.totalPrice * (-1)) : req.body.totalPrice
+            })
+        }
         res.sendStatus(200);
     } catch (error) {
         res.status(500).send(error);
     }
 });
 
-router.patch('/changeProductPrice/:invdID', async (req, res) => {
+router.patch('/changeProductPrice/:invdID/:invoiceID', async (req, res) => {
     try {
         await db('tbl_invoice_item').where('invdID', req.params.invdID).update({
             productPrice: req.body.productPrice
         });
+        if(req.body.sellStatus == 1) {
+            await db('tbl_stock')
+                .where('sourceID', req.params.invoiceID)
+                .andWhere('sourceType', req.body.stockType)
+                .andWhere('itemID', req.body.itemID)
+                .update({
+                    itemPrice: req.body.productPrice
+                });
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', req.body.stockType).update({
+                totalPrice: req.body.stockType == 's' ? (req.body.totalPrice * (-1)) : req.body.totalPrice
+            })
+        }
         res.sendStatus(200);
     } catch (error) {
         res.status(500).send(error);
     }
 });
+
+
+router.patch('/updateTotal/:invoiceID/:stockType', async (req, res) => {
+    try {
+        await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
+            totalPrice: req.body.totalPrice
+        });
+        await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', req.params.stockType).update({
+            totalPrice: req.params.stockType == 's' ? (req.body.totalPrice * (-1)) : req.body.totalPrice,
+            totalPay: req.body.totalPay
+        });
+    } catch (error) {
+        res.status(500).send(error);
+    }
+})
 
 router.delete('/deleteItem/:invoiceID/:invdID/:stockType/:itemID', async(req,res) => {
     try {
@@ -199,6 +296,7 @@ router.delete('/deleteItem/:invoiceID/:invdID/:stockType/:itemID', async(req,res
             });
         } else {
             await db('tbl_invoices').where('invoiceID', req.params.invoiceID).del()
+            await db('tbl_transactions').where('sourceID', req.params.invoiceID).andWhere('sourceType', req.params.stockType).delete();
             res.status(200).send({
                 message: 'Invoice Deleted'
             });
