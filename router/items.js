@@ -444,7 +444,7 @@ router.get('/lackInStock', async(req,res) => {
         tbl_items.itemName AS itemName,
         IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock
       FROM tbl_items
-        JOIN tbl_stock
+        LEFT JOIN tbl_stock
           ON tbl_stock.itemID = tbl_items.itemID
           WHERE tbl_items.deleteStatus = '1'  
       GROUP BY tbl_items.itemID, tbl_items.stockAlert
