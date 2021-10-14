@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.e015ce83fc038922ee5dad49232d2a7b.js"
+  "/precache-manifest.5bbbf3af8035a0265aa656306893bab3.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "darin-game"});
