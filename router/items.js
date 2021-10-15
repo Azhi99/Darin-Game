@@ -608,6 +608,7 @@ router.get('/getSoldedItems/:from/:to', async (req, res) => {
             JOIN tbl_items ON (tbl_items.itemID = tbl_invoice_item.itemID)
             JOIN tbl_invoices ON (tbl_invoices.invoiceID = tbl_invoice_item.invoiceID)
         WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
+            AND tbl_invoices.sellStatus = '1'
     `);
 
     const [itemsWithTotal] = await db.raw(`
@@ -620,6 +621,7 @@ router.get('/getSoldedItems/:from/:to', async (req, res) => {
             JOIN tbl_items ON (tbl_items.itemID = tbl_invoice_item.itemID) 
             JOIN tbl_invoices ON (tbl_invoices.invoiceID = tbl_invoice_item.invoiceID) 
         WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
+            AND tbl_invoices.sellStatus = '1'
         GROUP BY tbl_invoice_item.itemID
     `);
 
