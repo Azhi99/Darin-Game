@@ -442,6 +442,7 @@ router.get('/lackInStock', async(req,res) => {
         tbl_items.itemID AS itemID,
         tbl_items.itemCode AS itemCode,
         tbl_items.itemName AS itemName,
+        tbl_items.shelfID AS shelfID,
         IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock
       FROM tbl_items
         LEFT JOIN tbl_stock
@@ -497,7 +498,7 @@ router.get('/moveFromToInStock', async(req,res) => {
                 ON tbl_stock.itemID = tbl_items.itemID
             WHERE tbl_stock.sourceType = 's'
                 AND
-                MONTH(tbl_stock.createAt) = 8
+                MONTH(tbl_stock.createAt) = ${new Date().getMonth() + 1}
             GROUP BY tbl_items.itemID
                 ORDER BY 2 DESC
             LIMIT 5`)
@@ -594,5 +595,38 @@ router.get('/getProfitByItem', async(req,res) => {
         res.status(500).send(error)
     }
 })
+
+router.get('/getSoldedItems/:from/:to', async (req, res) => {
+    const [items] = await db.raw(`
+        SELECT 
+            tbl_items.itemName as itemName, 
+            tbl_items.shelfID as shelfID, 
+            tbl_invoice_item.qty as qty, 
+            tbl_invoice_item.productPrice as productPrice,
+            tbl_invoices.invoiceID as invoiceID
+        FROM tbl_invoice_item
+            JOIN tbl_items ON (tbl_items.itemID = tbl_invoice_item.itemID)
+            JOIN tbl_invoices ON (tbl_invoices.invoiceID = tbl_invoice_item.invoiceID)
+        WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
+    `);
+
+    const [itemsWithTotal] = await db.raw(`
+        SELECT 
+            tbl_items.itemName as itemName,
+            tbl_items.shelfID as shelfID,
+            SUM(tbl_invoice_item.qty) as qty, 
+            SUM(tbl_invoice_item.productPrice * tbl_invoice_item.qty) as total
+        FROM tbl_invoice_item 
+            JOIN tbl_items ON (tbl_items.itemID = tbl_invoice_item.itemID) 
+            JOIN tbl_invoices ON (tbl_invoices.invoiceID = tbl_invoice_item.invoiceID) 
+        WHERE DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
+        GROUP BY tbl_invoice_item.itemID
+    `);
+
+    res.status(200).send({
+        items,
+        itemsWithTotal
+    });
+});
 
 module.exports = router
