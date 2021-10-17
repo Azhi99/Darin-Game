@@ -3,8 +3,6 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const path = require('path');
-const nodemailer = require('nodemailer');
-const mysqldump = require('mysqldump');
 require('dotenv').config()
 const db = require('./DB/dbConfig'); 
 
