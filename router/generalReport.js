@@ -178,7 +178,7 @@ router.get('/getTopSaleByCatToday', async(req,res) => {
                 ON tbl_stock.itemID = tbl_items.itemID
                 INNER JOIN tbl_categories
                 ON tbl_items.categoryID = tbl_categories.categoryID
-            WHERE tbl_stock.sourceType IN ('s', 'rs') AND DATE(tbl_stock.createAt) = '${new Date().toISOString().split('T')[0]}'
+            WHERE tbl_stock.sourceType IN ('s') AND DATE(tbl_stock.createAt) = '${new Date().toISOString().split('T')[0]}'
             GROUP BY tbl_categories.categoryID
                 ORDER BY 2 DESC
                 limit 10`)
