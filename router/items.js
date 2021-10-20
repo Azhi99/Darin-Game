@@ -511,7 +511,7 @@ router.get('/moveFromToInStock', async(req,res) => {
                                     ON tbl_stock.itemID = tbl_items.itemID
                                 GROUP BY tbl_items.itemID
                                 HAVING IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * (-1) BETWEEN 0 AND 10
-                                    ORDER BY 3 DESC`)
+                                    ORDER BY 3 ASC`)
         res.status(200).send({
             inToStock,
             outFromStock,

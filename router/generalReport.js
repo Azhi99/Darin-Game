@@ -168,6 +168,28 @@ router.get('/getTopSaleByCat', async(req,res) => {
     }
 })
 
+router.get('/getTopSaleByCatToday', async(req,res) => {
+    try {
+        const [getTopSaleByCat] = await db.raw(`SELECT
+                tbl_categories.categoryName,
+                (-1) * SUM(tbl_stock.qty) AS totalSale
+            FROM tbl_stock
+                INNER JOIN tbl_items
+                ON tbl_stock.itemID = tbl_items.itemID
+                INNER JOIN tbl_categories
+                ON tbl_items.categoryID = tbl_categories.categoryID
+            WHERE tbl_stock.sourceType IN ('s', 'rs') AND DATE(tbl_stock.createAt) = '${new Date().toISOString().split('T')[0]}'
+            GROUP BY tbl_categories.categoryID
+                ORDER BY 2 DESC
+                limit 10`)
+        res.status(200).send({
+            getTopSaleByCat
+        })        
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 router.get('/getSaleAndPurchase', async(req,res) => {
     try {
         var date = new Date()
