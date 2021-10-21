@@ -564,7 +564,7 @@ router.get('/getItemForPurchase/:itemCode', async(req,res) => {
     }
 })
 
-router.get('/getProfitByItem', async(req,res) => {
+router.get('/getProfitByItem/:from/:to', async(req,res) => {
     try {
         const [getProfitByItem] = await db.raw(`SELECT
         tbl_items.itemID,
@@ -585,7 +585,7 @@ router.get('/getProfitByItem', async(req,res) => {
           ON tbl_items.brandID = tbl_brands.brandID
           LEFT OUTER JOIN tbl_shelfs
           ON tbl_items.shelfID = tbl_shelfs.shelfID
-      WHERE tbl_stock.sourceType IN ('s', 'rs', 'd')
+      WHERE tbl_stock.sourceType IN ('s', 'rs', 'd') AND DATE(tbl_stock.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
       GROUP BY tbl_items.itemID`)
 
       res.status(200).send({
