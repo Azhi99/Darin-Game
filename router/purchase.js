@@ -10,14 +10,54 @@ router.post('/', async (req, res) => {
         purchase.createAt = new Date().toISOString().split("T")[0], purchase.updateAt = purchase.createAt
         purchase.debtStatus = '0'
         purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
-
+        
+        const note1 = purchase.note1
+        const note2 = purchase.note2
+        const note3 = purchase.note3
+        const notePurchase = purchase.notePurchase
         const purchase_items = purchase.purchase_items
         const supplierName = purchase.supplierName
         delete purchase.supplierName
         delete purchase.purchase_items
+        delete purchase.note1
+        delete purchase.note2
+        delete purchase.note3
+        delete purchase.notePurchase
+
 
         //insert purchase and return id of it
         const [purchase_id] = await db('tbl_purchases').insert(purchase)
+
+        if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
+            await db('tbl_box_transaction').insert({
+                shelfID: purchase.shelfID,
+                sourceID: purchase_id,
+                amount: purchase.amountPay * -1,
+                type: 'p',
+                note:   purchase.referenceNo + '' + notePurchase + ' ' + supplierName + ' ' + note1,
+                userID: purchase.userIDCreated
+            })
+        } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
+            await db('tbl_box_transaction').insert({
+                shelfID: purchase.shelfID,
+                sourceID: purchase_id,
+                amount: purchase.totalPrice * -1,
+                type: 'p',
+                note:  purchase.referenceNo + ' ' + notePurchase + ' ' + supplierName + ' ' + note2,
+                userID: purchase.userIDCreated
+            })
+        } else if(purchase.stockType == 'rp') {
+            await db('tbl_box_transaction').insert({
+                shelfID: purchase.shelfID,
+                sourceID: purchase_id,
+                amount: purchase.totalPrice,
+                type: 'rp',
+                note: supplierName + ' ' + note3,
+                userID: purchase.userIDCreated
+            })
+        }
+
+
 
         //insert to transaction  
         await db('tbl_transactions').insert({
@@ -52,6 +92,7 @@ router.post('/', async (req, res) => {
 
         res.status(201).send()
     } catch (error) {
+        console.log(error);
         res.status(500).send()
     }
 })
@@ -156,6 +197,7 @@ router.get('/', (req, res) => {
 
     const fields = [
         'tp.purchaseID', 'tp.supplierID', 'ts.supplierName',
+        'tsh.shelfID', 'tsh.shelfName',
         'tp.referenceNo', 'tp.totalPrice', 'tp.paymentType',
         'tp.purchaseStatus', 'tu.userID', 'tu.userName'
     ]
@@ -163,6 +205,7 @@ router.get('/', (req, res) => {
     db('tbl_purchases as tp')
         .join('tbl_suppliers as ts', 'ts.supplierID', 'tp.supplierID')
         .join('tbl_users as tu', 'tu.userID', 'tp.userIDUpdate')
+        .join('tbl_shelfs as tsh', 'tp.shelfID', 'tsh.shelfID')
         .offset((page - 1) * 20).limit(20)
         .select(fields).orderBy([{ column: 'purchaseID', order: 'desc' }])
         .then(purchases => {

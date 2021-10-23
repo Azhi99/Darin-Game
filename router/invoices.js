@@ -123,7 +123,7 @@ router.post('/addInvoice', async(req,res) => {
     }
 })
 
-router.patch('/updateInvoice/:invoiceID', async(req,res)=> {
+router.patch('/updateInvoice/:invoice   ID', async(req,res)=> {
     try {
         await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
             totalPrice: req.body.totalPrice || 0,
@@ -320,6 +320,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
         })
     
         var items = null;
+        var itemToBox = null
         if(req.body.stockType == 's') {
             items = await db.select(
                 db.raw(`${req.params.invoiceID} as sourceID`),
@@ -330,6 +331,16 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 db.raw(`costPrice as costPrice`)
             ).from('tbl_invoice_item')
              .where('invoiceID', req.params.invoiceID);
+
+             itemToBox = await db.select(
+                db.raw('shelfID as shelfID'),
+                db.raw(`${req.params.invoiceID} as sourceID`),
+                db.raw('sum(qty * productPrice) as amount'),
+                db.raw(`'${req.body.stockType}' as type`),
+                db.raw(`${(jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID} as userID`),
+                db.raw(`'${req.params.invoiceID + ' ' + req.body.noteInvoice + ' ' + req.body.customerName + ' ' + req.body.note2}' as note`)
+             ).from('tbl_invoice_item').where('invoiceID', req.params.invoiceID)
+             .groupBy('shelfID')
         } else {
             items = await db.select(
                 db.raw(`${req.params.invoiceID} as sourceID`),
@@ -341,8 +352,23 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 db.raw(`expiryDate as expiryDate`)
             ).from('tbl_invoice_item')
              .where('invoiceID', req.params.invoiceID);
+             
+             itemToBox = await db.select(
+                db.raw('shelfID as shelfID'),
+                db.raw(`${req.params.invoiceID} as sourceID`),
+                db.raw('sum(qty * productPrice) * -1  as amount'),
+                db.raw(`'${req.body.stockType}' as type`),
+                db.raw(`${(jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID} as userID`),
+                db.raw(`'${req.body.customerName + ' ' + req.body.note3}' as note`)
+             ).from('tbl_invoice_item').where('invoiceID', req.params.invoiceID)
+             .groupBy('shelfID')
         }
         await db('tbl_stock').insert(items);
+        
+        
+        if(req.body.invoiceType == 'c') {
+            await db('tbl_box_transaction').insert(itemToBox)
+        }
 
         if(req.body.customerID != 1) {
             await db('tbl_transactions').insert({
@@ -359,7 +385,9 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
         }
         res.sendStatus(200);
     } catch (error) {
+        console.log(error);
         res.status(500).send(error);
+        
     }
 })
 
