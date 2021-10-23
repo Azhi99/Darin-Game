@@ -63,13 +63,13 @@ router.get('/countTypes', async (req, res) => {
     });
 });
 
-
 //expenses Router 
 
 router.post('/addExpense', async(req,res) => {
     try {
         const [expenseID] = await db('tbl_expenses').insert({
             typeExpenseID: req.body.typeExpenseID,
+            shelfID: req.body.shelfID,
             priceExpenseIQD: req.body.priceExpenseIQD || 0,
             priceExpense$: req.body.priceExpense$ || 0,
             dollarPrice: req.body.dollarPrice || 0,
@@ -77,10 +77,44 @@ router.post('/addExpense', async(req,res) => {
             userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
             userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
+
+        if(req.body.priceExpenseIQD > 0 && req.body.priceExpense$ > 0) {
+            const priceIQD = req.body.priceExpenseIQD / req.body.dollarPrice
+            await db('tbl_box_transaction').insert({
+                shelfID: req.body.shelfID,
+                sourceID: expenseID,
+                amount: -1 * (req.body.priceExpense$ + priceIQD),
+                type: 'exp',
+                note: req.body.note ? req.body.note : 'خەرجی',
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        } else if(req.body.priceExpenseIQD <= 0 && req.body.priceExpense$ > 0) {
+            await db('tbl_box_transaction').insert({
+                shelfID: req.body.shelfID,
+                sourceID: expenseID,
+                amount: -1 * req.body.priceExpense$,
+                type: 'exp',
+                note: req.body.note ? req.body.note : 'خەرجی',
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        } else {
+            const priceIQD = req.body.priceExpenseIQD / req.body.dollarPrice
+
+            await db('tbl_box_transaction').insert({
+                shelfID: req.body.shelfID,
+                sourceID: expenseID,
+                amount: -1 * priceIQD,
+                type: 'exp',
+                note: req.body.note ? req.body.note : 'خەرجی',
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        }
+        
         res.status(201).send({
         expenseID
         })
     } catch (error) {
+        console.log(error);
         res.status(500).send(error)
     }
 })
@@ -89,12 +123,19 @@ router.patch('/updateExpense/:expenseID', async(req,res) => {
     try {
         await db('tbl_expenses').where('expenseID', req.params.expenseID).update({
             typeExpenseID: req.body.typeExpenseID,
+            shelfID: req.body.shelfID,
             priceExpenseIQD: req.body.priceExpenseIQD || 0,
             priceExpense$: req.body.priceExpense$ || 0,
             dollarPrice: req.body.dollarPrice || 0,
             note: req.body.note || null,
             updaetAt: new Date(),
             userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
+        })
+        await db('tbl_box_transaction').where('sourceID', req.params.expenseID).andWhere('type', 'exp').update({
+            shelfID: req.body.shelfID,
+            amount: -1 * req.body.priceExpense$,
+            note: req.body.note,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
         })
          res.sendStatus(200)
     } catch (error) {
@@ -117,6 +158,8 @@ router.get('/todayExpense', async(req,res) => {
         tbl_expenses.expenseID,
         tbl_type_expense.typeName,
         tbl_expenses.typeExpenseID,
+        tbl_shelfs.shelfID,
+        tbl_shelfs.shelfName,
         tbl_expenses.priceExpenseIQD,
         tbl_expenses.priceExpense$,
         tbl_expenses.dollarPrice,
@@ -128,6 +171,8 @@ router.get('/todayExpense', async(req,res) => {
           ON tbl_expenses.userIDCreated = tbl_users.userID
         INNER JOIN tbl_type_expense
           ON tbl_expenses.typeExpenseID = tbl_type_expense.typeExpenseID
+        INNER JOIN tbl_shelfs 
+           ON tbl_expenses.shelfID = tbl_shelfs.shelfID
           where date(tbl_expenses.createAt) like "${new Date().toISOString().split('T')[0]}%"
           order by tbl_expenses.expenseID desc`)
            res.status(200).send(todayExpense)
@@ -163,6 +208,7 @@ router.get('/oneDateExpense/:from', async(req,res) => {
         const [oneDateExpense] = await db.raw(`SELECT
         tbl_expenses.expenseID,
         tbl_type_expense.typeName,
+        tbl_shelfs.shelfName,
         tbl_expenses.priceExpenseIQD,
         tbl_expenses.priceExpense$,
         tbl_expenses.dollarPrice,
@@ -174,6 +220,8 @@ router.get('/oneDateExpense/:from', async(req,res) => {
           ON tbl_expenses.userIDCreated = tbl_users.userID
         INNER JOIN tbl_type_expense
           ON tbl_expenses.typeExpenseID = tbl_type_expense.typeExpenseID
+          INNER JOIN tbl_shelfs 
+           ON tbl_expenses.shelfID = tbl_shelfs.shelfID
           where  date(tbl_expenses.createAt) = "${req.params.from}" `)
             res.status(200).send(oneDateExpense)
         } catch (error) {
@@ -186,6 +234,7 @@ router.get('/betweenDateExpense/:from/:to', async(req,res) => {
         const [totalExpense] = await db.raw(`SELECT
         tbl_expenses.expenseID,
         tbl_type_expense.typeName,
+        tbl_shelfs.shelfName,
         tbl_expenses.priceExpenseIQD,
         tbl_expenses.priceExpense$,
         tbl_expenses.dollarPrice,
@@ -197,6 +246,8 @@ router.get('/betweenDateExpense/:from/:to', async(req,res) => {
           ON tbl_expenses.userIDCreated = tbl_users.userID
         INNER JOIN tbl_type_expense
           ON tbl_expenses.typeExpenseID = tbl_type_expense.typeExpenseID
+          INNER JOIN tbl_shelfs 
+           ON tbl_expenses.shelfID = tbl_shelfs.shelfID
           where  date(tbl_expenses.createAt) BETWEEN "${req.params.from}" AND "${req.params.to}" 
           order by 1 asc`)
 

@@ -99,11 +99,21 @@ router.post('/addReturnDebt', async(req,res) => {
     try {
         const [rdID] = await db('tbl_return_debt').insert({
             supplierID: req.body.supplierID,
+            shelfID: req.body.shelfID,
             amountReturn: req.body.amountReturn || 0,
             referenceNO: req.body.referenceNO,
             discount: req.body.discount,
             dollarPrice: req.body.dollarPrice,
             purchaseNumbers: req.body.purchaseNumbers.length ? req.body.purchaseNumbers.join(',') : null,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
+        })
+
+        await db('tbl_box_transaction').insert({
+            shelfID: req.body.shelfID,
+            sourceID: rdID,
+            amount: req.body.amountReturn * -1,
+            type: 'rdp',
+            note: req.body.supplierName + ' ' + req.body.note,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         
@@ -138,10 +148,16 @@ router.post('/addReturnDebt', async(req,res) => {
 router.patch('/updateReturnDebt/:rdID', async(req,res) => {
     try {
         await db('tbl_return_debt').where('rdID', req.params.rdID).update({
+            shelfID: req.body.shelfID,
             amountReturn: req.body.amountReturn || 0,
             referenceNO: req.body.referenceNO || null,
             discount: req.body.discount,
             dollarPrice: req.body.dollarPrice,
+        })
+
+        await db('tbl_box_transaction').where('sourceID', req.params.rdID).andWhere('type', 'rdp').update({
+            amount: req.body.amountReturn * -1,
+            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
 
         if(req.body.purchaseNumbers.length) {
@@ -189,6 +205,8 @@ router.get('/todayReturnDebt', async (req, res) => {
         tbl_return_debt.rdID,
         tbl_suppliers.supplierID,
         tbl_suppliers.supplierName,
+        tbl_shelfs.shelfID,
+        tbl_shelfs.shelfName,
         tbl_return_debt.amountReturn,
         tbl_return_debt.referenceNO,
         tbl_return_debt.discount,
@@ -202,6 +220,8 @@ router.get('/todayReturnDebt', async (req, res) => {
         INNER JOIN tbl_return_debt
           ON tbl_return_debt.userID = tbl_users.userID
           AND tbl_return_debt.supplierID = tbl_suppliers.supplierID
+          INNER JOIN tbl_shelfs 
+           ON tbl_return_debt.shelfID = tbl_shelfs.shelfID
           where date(tbl_return_debt.createAt) = "${new Date().toISOString().split('T')[0]}"`)
            res.status(200).send(todayReturnDebt)
     } catch (error) {
