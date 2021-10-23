@@ -123,7 +123,7 @@ router.post('/addInvoice', async(req,res) => {
     }
 })
 
-router.patch('/updateInvoice/:invoice   ID', async(req,res)=> {
+router.patch('/updateInvoice/:invoiceID', async(req,res)=> {
     try {
         await db('tbl_invoices').where('invoiceID', req.params.invoiceID).update({
             totalPrice: req.body.totalPrice || 0,

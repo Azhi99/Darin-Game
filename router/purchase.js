@@ -17,13 +17,14 @@ router.post('/', async (req, res) => {
         const notePurchase = purchase.notePurchase
         const purchase_items = purchase.purchase_items
         const supplierName = purchase.supplierName
+        
+        delete purchase.suppliers
         delete purchase.supplierName
         delete purchase.purchase_items
         delete purchase.note1
         delete purchase.note2
         delete purchase.note3
         delete purchase.notePurchase
-
 
         //insert purchase and return id of it
         const [purchase_id] = await db('tbl_purchases').insert(purchase)
@@ -134,8 +135,28 @@ router.patch('/updatePurchase', async (req, res) => {
     console.log(purchase);
     await db('tbl_purchases').update(purchase).where('purchaseID', '=', purchaseID)
  
-        await db('tbl_transactions').where('sourceID', purchaseID).andWhere('sourceType', purchase.stockType).andWhere('accountID', purchase.supplierID)
-        .update({
+    if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
+        await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
+            shelfID: purchase.shelfID,
+            amount: purchase.amountPay * -1,
+            userID: purchase.userIDCreated
+        })
+    } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
+        await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
+            shelfID: purchase.shelfID,
+            amount: purchase.totalPrice * -1,
+            userID: purchase.userIDCreated
+        })
+    } else if(purchase.stockType == 'rp') {
+        await db('tbl_box_transaction').where('type' , 'rp').andWhere('sourceID', purchaseID).update({
+            shelfID: purchase.shelfID,
+            amount: purchase.totalPrice,
+            userID: purchase.userIDCreated
+        })
+    }
+
+
+    await db('tbl_transactions').where('sourceID', purchaseID).andWhere('sourceType', purchase.stockType).andWhere('accountID', purchase.supplierID).update({
                 totalPrice: purchase.stockType == 'p' ? purchase.totalPrice  : purchase.totalPrice * (-1),
                 totalPay: purchase.amountPay,
                 userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
@@ -216,7 +237,6 @@ router.get('/', (req, res) => {
 
         })
 })
-
 router.get('/search/:referenceNo', (req, res) => {
 
     const fields = [
@@ -238,8 +258,6 @@ router.get('/search/:referenceNo', (req, res) => {
 
         })
 })
-
-
 router.get('/getSupplier', async (req, res) => {
     try {
         const suppliers = await db('tbl_suppliers').select('supplierID', 'supplierName').where('supplierName', 'like', `${req.query.name}%`)
@@ -251,8 +269,6 @@ router.get('/getSupplier', async (req, res) => {
 
 
 })
-
-
 router.get('/getItems', async (req, res) => {
     try {
         const items = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').where('itemCode', 'like', `${req.query.name}%`).orWhere('itemName', 'like', `${req.query.name}%`)
@@ -262,8 +278,6 @@ router.get('/getItems', async (req, res) => {
         res.status(500).send()
     }
 })
-
-
 router.get('/:id', async (req, res) => {
     const [purchase] = await db('tbl_purchases').select().where('purchaseID', '=', req.params.id)
     purchase.purchase_items = await db('tbl_purchase_items').select().where('purchaseID', '=', req.params.id)
@@ -290,8 +304,8 @@ router.get('/:id', async (req, res) => {
 
 
 })
-
 const updateTotal = (purchaseID) =>{
     db.raw(`UPDATE 'tbl_purchases' SET 'totalPrice'= ( SELECT SUM('qty' * 'costAfterDisc') FROM 'tbl_purchase_items' WHERE 'purchaseID' = ${purchaseID} ) WHERE 'purchaseID' = ${purchaseID};`)
 }
+
 module.exports = router
