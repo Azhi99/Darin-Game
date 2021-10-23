@@ -24,6 +24,7 @@ const purchaseRouter = require('./router/purchase.js')
 const invoiceRouter = require('./router/invoices.js')
 const generalReport = require('./router/generalReport.js')
 const ownerRouter = require('./router/oweners.js')
+const boxRouter = require('./router/boxTransaction.js')
 
 app.use('/essential', essentialRouter)
 app.use('/user', userRouter)
@@ -35,6 +36,7 @@ app.use('/purchase', purchaseRouter)
 app.use('/invoice', invoiceRouter)
 app.use('/generalReport', generalReport)
 app.use('/owner', ownerRouter)
+app.use('/box', boxRouter)
 
 app.post('/login', async (req, res) => {
     const [user] = await db('tbl_users').where('userName', req.body.userName).select();
