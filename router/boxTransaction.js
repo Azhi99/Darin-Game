@@ -7,7 +7,7 @@ router.post('/addTransaction', async (req, res) => {
     const [btID] = await db('tbl_box_transaction').insert({
         shelfID: req.body.shelfID,
         sourceID: req.body.sourceID,
-        amount: req.body.amount,
+        amount: req.body.type == 'in' ? req.body.amount : req.body.amount * -1,
         type: req.body.type,
         note: req.body.note || null,
         userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
@@ -22,7 +22,7 @@ router.patch('/updateTransaction/:btID', async (req, res) => {
         await db('tbl_box_transaction').where('btID', req.params.btID).update({
             shelfID: req.body.shelfID,
             sourceID: req.body.sourceID,
-            amount: req.body.amount,
+            amount: req.body.type == 'in' ? req.body.amount : req.body.amount * -1,
             type: req.body.type,
             note: req.body.note || null
         });
