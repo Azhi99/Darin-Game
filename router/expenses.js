@@ -131,12 +131,31 @@ router.patch('/updateExpense/:expenseID', async(req,res) => {
             updaetAt: new Date(),
             userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
-        await db('tbl_box_transaction').where('sourceID', req.params.expenseID).andWhere('type', 'exp').update({
-            shelfID: req.body.shelfID,
-            amount: -1 * req.body.priceExpense$,
-            note: req.body.note,
-            userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
-        })
+
+        if(req.body.priceExpenseIQD > 0 && req.body.priceExpense$ > 0) {
+            const priceIQD = req.body.priceExpenseIQD / req.body.dollarPrice
+            await db('tbl_box_transaction').where('sourceID', req.params.expenseID).andWhere('type', 'exp').update({
+                shelfID: req.body.shelfID,
+                amount: -1 * (req.body.priceExpense$ + priceIQD),
+                note: req.body.note,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        } else if(req.body.priceExpenseIQD <= 0 && req.body.priceExpense$ > 0) {
+            await db('tbl_box_transaction').where('sourceID', req.params.expenseID).andWhere('type', 'exp').update({
+                shelfID: req.body.shelfID,
+                amount: -1 * req.body.priceExpense$,
+                note: req.body.note,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        } else {
+            const priceIQD = req.body.priceExpenseIQD / req.body.dollarPrice
+            await db('tbl_box_transaction').where('sourceID', req.params.expenseID).andWhere('type', 'exp').update({
+                shelfID: req.body.shelfID,
+                amount: -1 * priceIQD,
+                note: req.body.note,
+                userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
+            })
+        }
          res.sendStatus(200)
     } catch (error) {
         res.status(500).send(error)
