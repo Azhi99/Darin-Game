@@ -11,10 +11,10 @@ router.post('/', async (req, res) => {
         purchase.debtStatus = '0'
         purchase.userIDCreated = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID, purchase.userIDUpdate = (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         
-        const note1 = purchase.note1
-        const note2 = purchase.note2
-        const note3 = purchase.note3
-        const notePurchase = purchase.notePurchase
+        // const note1 = purchase.note1
+        // const note2 = purchase.note2
+        // const note3 = purchase.note3
+        // const notePurchase = purchase.notePurchase
         const purchase_items = purchase.purchase_items
         const supplierName = purchase.supplierName
         
@@ -29,34 +29,34 @@ router.post('/', async (req, res) => {
         //insert purchase and return id of it
         const [purchase_id] = await db('tbl_purchases').insert(purchase)
 
-        if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
-            await db('tbl_box_transaction').insert({
-                shelfID: purchase.shelfID,
-                sourceID: purchase_id,
-                amount: purchase.amountPay * -1,
-                type: 'p',
-                note:  note1 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
-                userID: purchase.userIDCreated
-            })
-        } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
-            await db('tbl_box_transaction').insert({
-                shelfID: purchase.shelfID,
-                sourceID: purchase_id,
-                amount: purchase.totalPrice * -1,
-                type: 'p',
-                note:  note2 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
-                userID: purchase.userIDCreated
-            })
-        } else if(purchase.stockType == 'rp') {
-            await db('tbl_box_transaction').insert({
-                shelfID: purchase.shelfID,
-                sourceID: purchase_id,
-                amount: purchase.totalPrice,
-                type: 'rp',
-                note: note3 + ' ' + supplierName,
-                userID: purchase.userIDCreated
-            })
-        }
+        // if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
+        //     await db('tbl_box_transaction').insert({
+        //         shelfID: purchase.shelfID,
+        //         sourceID: purchase_id,
+        //         amount: purchase.amountPay * -1,
+        //         type: 'p',
+        //         note:  note1 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
+        //         userID: purchase.userIDCreated
+        //     })
+        // } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
+        //     await db('tbl_box_transaction').insert({
+        //         shelfID: purchase.shelfID,
+        //         sourceID: purchase_id,
+        //         amount: purchase.totalPrice * -1,
+        //         type: 'p',
+        //         note:  note2 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
+        //         userID: purchase.userIDCreated
+        //     })
+        // } else if(purchase.stockType == 'rp') {
+        //     await db('tbl_box_transaction').insert({
+        //         shelfID: purchase.shelfID,
+        //         sourceID: purchase_id,
+        //         amount: purchase.totalPrice,
+        //         type: 'rp',
+        //         note: note3 + ' ' + supplierName,
+        //         userID: purchase.userIDCreated
+        //     })
+        // }
 
 
 
@@ -135,25 +135,25 @@ router.patch('/updatePurchase', async (req, res) => {
     console.log(purchase);
     await db('tbl_purchases').update(purchase).where('purchaseID', '=', purchaseID)
  
-    if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
-        await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
-            shelfID: purchase.shelfID,
-            amount: purchase.amountPay * -1,
-            userID: purchase.userIDCreated
-        })
-    } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
-        await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
-            shelfID: purchase.shelfID,
-            amount: purchase.totalPrice * -1,
-            userID: purchase.userIDCreated
-        })
-    } else if(purchase.stockType == 'rp') {
-        await db('tbl_box_transaction').where('type' , 'rp').andWhere('sourceID', purchaseID).update({
-            shelfID: purchase.shelfID,
-            amount: purchase.totalPrice,
-            userID: purchase.userIDCreated
-        })
-    }
+    // if(purchase.stockType == 'p' && purchase.paymentType == 'd' && purchase.amountPay > 0) {
+    //     await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
+    //         shelfID: purchase.shelfID,
+    //         amount: purchase.amountPay * -1,
+    //         userID: purchase.userIDCreated
+    //     })
+    // } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
+    //     await db('tbl_box_transaction').where('type' , 'p').andWhere('sourceID', purchaseID).update({
+    //         shelfID: purchase.shelfID,
+    //         amount: purchase.totalPrice * -1,
+    //         userID: purchase.userIDCreated
+    //     })
+    // } else if(purchase.stockType == 'rp') {
+    //     await db('tbl_box_transaction').where('type' , 'rp').andWhere('sourceID', purchaseID).update({
+    //         shelfID: purchase.shelfID,
+    //         amount: purchase.totalPrice,
+    //         userID: purchase.userIDCreated
+    //     })
+    // }
 
 
     await db('tbl_transactions').where('sourceID', purchaseID).andWhere('sourceType', purchase.stockType).andWhere('accountID', purchase.supplierID).update({
@@ -218,7 +218,6 @@ router.get('/', (req, res) => {
 
     const fields = [
         'tp.purchaseID', 'tp.supplierID', 'ts.supplierName',
-        'tsh.shelfID', 'tsh.shelfName',
         'tp.referenceNo', 'tp.totalPrice', 'tp.paymentType',
         'tp.purchaseStatus', 'tu.userID', 'tu.userName'
     ]
@@ -226,7 +225,6 @@ router.get('/', (req, res) => {
     db('tbl_purchases as tp')
         .join('tbl_suppliers as ts', 'ts.supplierID', 'tp.supplierID')
         .join('tbl_users as tu', 'tu.userID', 'tp.userIDUpdate')
-        .join('tbl_shelfs as tsh', 'tp.shelfID', 'tsh.shelfID')
         .offset((page - 1) * 20).limit(20)
         .select(fields).orderBy([{ column: 'purchaseID', order: 'desc' }])
         .then(purchases => {
