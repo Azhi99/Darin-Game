@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
                 sourceID: purchase_id,
                 amount: purchase.amountPay * -1,
                 type: 'p',
-                note:   purchase.referenceNo + '' + notePurchase + ' ' + supplierName + ' ' + note1,
+                note:  note1 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
                 userID: purchase.userIDCreated
             })
         } else if(purchase.stockType == 'p' &&purchase.paymentType == 'c') {
@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
                 sourceID: purchase_id,
                 amount: purchase.totalPrice * -1,
                 type: 'p',
-                note:  purchase.referenceNo + ' ' + notePurchase + ' ' + supplierName + ' ' + note2,
+                note:  note2 + ' ' + supplierName  + ' ' + notePurchase + ' ' + purchase.referenceNo,
                 userID: purchase.userIDCreated
             })
         } else if(purchase.stockType == 'rp') {
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
                 sourceID: purchase_id,
                 amount: purchase.totalPrice,
                 type: 'rp',
-                note: supplierName + ' ' + note3,
+                note: note3 + ' ' + supplierName,
                 userID: purchase.userIDCreated
             })
         }

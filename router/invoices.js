@@ -338,7 +338,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 db.raw('sum(qty * productPrice) as amount'),
                 db.raw(`'${req.body.stockType}' as type`),
                 db.raw(`${(jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID} as userID`),
-                db.raw(`'${req.params.invoiceID + ' ' + req.body.noteInvoice + ' ' + req.body.customerName + ' ' + req.body.note2}' as note`)
+                db.raw(`'${req.body.note2 + ' ' + req.body.customerName + ' ' + req.body.noteInvoice + ' ' + req.params.invoiceID}' as note`)
              ).from('tbl_invoice_item').where('invoiceID', req.params.invoiceID)
              .groupBy('shelfID')
         } else {
@@ -359,7 +359,7 @@ router.patch('/sellInvoice/:invoiceID', async(req,res) => {
                 db.raw('sum(qty * productPrice) * -1  as amount'),
                 db.raw(`'${req.body.stockType}' as type`),
                 db.raw(`${(jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID} as userID`),
-                db.raw(`'${req.body.customerName + ' ' + req.body.note3}' as note`)
+                db.raw(`'${req.body.note3 + ' ' + req.body.customerName}' as note`)
              ).from('tbl_invoice_item').where('invoiceID', req.params.invoiceID)
              .groupBy('shelfID')
         }

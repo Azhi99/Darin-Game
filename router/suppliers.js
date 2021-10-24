@@ -113,7 +113,7 @@ router.post('/addReturnDebt', async(req,res) => {
             sourceID: rdID,
             amount: req.body.amountReturn * -1,
             type: 'rdp',
-            note: req.body.supplierName + ' ' + req.body.note,
+            note: req.body.note + ' ' + req.body.supplierName ,
             userID: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         
