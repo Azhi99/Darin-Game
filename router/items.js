@@ -248,7 +248,7 @@ router.get('/getItemForShowInvoice/:search/:wholeSell', async (req, res) => {
     return res.status(200).send({
         itemName: item.itemName,
         itemCode: item.itemCode,
-        productPrice: req.params.wholeSell ? item.itemPriceWhole : item.itemPriceRetail,
+        productPrice: req.params.wholeSell == "true" ? item.itemPriceWhole : item.itemPriceRetail,
         shelfName: item.shelfName,
         unitName: item.unitName,
         qty: req.params.wholeSell ? item.perUnit : 1
