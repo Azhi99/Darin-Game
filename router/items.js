@@ -191,7 +191,7 @@ router.get('/getItem/:search', (req, res) => {
         itemPriceWhole,
         perUnit
         from tbl_items 
-            where itemCode like "${req.params.search}%" or itemName like "${req.params.search}%"
+            where LOWER(itemCode) like "${req.params.search.toLowerCase()}%" or LOWER(itemName) like "${req.params.search.toLowerCase()}%"
     `).then(([data]) => {
         res.status(200).send(data)
     }) 

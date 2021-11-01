@@ -22,8 +22,10 @@ router.post('/addInvoice', async(req,res) => {
         ).from('tbl_items')
          .join('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
          .join('tbl_units', 'tbl_items.unitID', '=', 'tbl_units.unitID')
-         .where('tbl_items.itemCode', req.body.search)
-         .orWhere('tbl_items.itemName', req.body.search)
+         .whereRaw(`LOWER(tbl_items.itemCode)='${req.body.search.toLowerCase()}'`)
+         .orWhereRaw(`LOWER(tbl_items.itemName)='${req.body.search.toLowerCase()}'`)
+        //  .where('tbl_items.itemCode', req.body.search)
+        //  .orWhere('tbl_items.itemName', req.body.search)
          .andWhere('tbl_items.deleteStatus', '1');
         if(!item) {
             return res.status(500).send({
