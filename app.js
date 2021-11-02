@@ -13,6 +13,8 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cors())
 
+const checkAuth = require('./checkAuth.js');
+
 const essentialRouter = require('./router/essential.js')
 const userRouter = require('./router/users.js')
 const itemRouter = require('./router/items.js')
@@ -26,17 +28,17 @@ const generalReport = require('./router/generalReport.js')
 const ownerRouter = require('./router/oweners.js')
 const boxRouter = require('./router/boxTransaction.js')
 
-app.use('/essential', essentialRouter)
+app.use('/essential', checkAuth, essentialRouter)
 app.use('/user', userRouter)
-app.use('/item', itemRouter)
-app.use('/expense', expenseRouter)
-app.use('/supplier', supplierRouter)
-app.use('/customer', customerRouter)
-app.use('/purchase', purchaseRouter)
-app.use('/invoice', invoiceRouter)
-app.use('/generalReport', generalReport)
-app.use('/owner', ownerRouter)
-app.use('/box', boxRouter)
+app.use('/item', checkAuth, itemRouter)
+app.use('/expense', checkAuth, expenseRouter)
+app.use('/supplier', checkAuth, supplierRouter)
+app.use('/customer', checkAuth, customerRouter)
+app.use('/purchase', checkAuth, purchaseRouter)
+app.use('/invoice', checkAuth, invoiceRouter)
+app.use('/generalReport', checkAuth, generalReport)
+app.use('/owner', checkAuth, ownerRouter)
+app.use('/box', checkAuth, boxRouter)
 
 app.post('/login', async (req, res) => {
     const [user] = await db('tbl_users').where('userName', req.body.userName).select();

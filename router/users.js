@@ -4,10 +4,12 @@ const bcrypt = require('bcrypt');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const checkAuth = require('../checkAuth.js');
+
 const router = express.Router()
 //roles Router
 
-router.post('/addRole', async(req,res) => {
+router.post('/addRole', checkAuth, async(req,res) => {
     try {
        const [addRole] =  await db('tbl_roles').insert({
         roleName: req.body.roleName
@@ -31,7 +33,7 @@ router.post('/addRole', async(req,res) => {
     }
 })
 
-router.patch('/updateRole/:roleID', async(req,res) => {
+router.patch('/updateRole/:roleID', checkAuth, async(req,res) => {
     try {
         await db('tbl_roles').where('roleID', req.params.roleID).update({ roleName: req.body.roleName });
         await db('tbl_sub_role').where('roleID', req.params.roleID).delete();
@@ -48,7 +50,7 @@ router.patch('/updateRole/:roleID', async(req,res) => {
     }
 })
 
-router.delete('/deleteRole/:roleID', async (req, res) => {
+router.delete('/deleteRole/:roleID', checkAuth, async (req, res) => {
     await db('tbl_sub_role').where('roleID', req.params.roleID).delete();
     await db('tbl_roles').where('roleID', req.params.roleID).delete();
     res.sendStatus(200);
@@ -65,7 +67,7 @@ router.patch('/updateSubRole/:subRoleID', async(req,res) => {
     }
 })
 
-router.delete('/deleteSubRole/:subRoleID', async(req,res) => {
+router.delete('/deleteSubRole/:subRoleID', checkAuth, async(req,res) => {
     try {
         await db('tbl_sub_role').where('subRoleID', req.params.subRoleID).delete()
          res.status(200).send()
@@ -74,12 +76,12 @@ router.delete('/deleteSubRole/:subRoleID', async(req,res) => {
     }
 })
 
-router.get('/allRole', async (req, res) => {
+router.get('/allRole',  checkAuth, async (req, res) => {
     const roles = await db('tbl_roles').select().orderBy('roleID', 'desc');
     res.status(200).send(roles);
 });
 
-router.get('/subRoles/:roleID', async (req, res) => {
+router.get('/subRoles/:roleID',  checkAuth, async (req, res) => {
     const subRoles = await db('tbl_sub_role').where('roleID', req.params.roleID).select('subRoleName');
     const arr = subRoles.map(({subRoleName}) => subRoleName);
     res.status(200).send(arr);
@@ -106,7 +108,7 @@ const upload = multer({
     }
 }).single('userImage');
 
-router.post('/addUser', (req,res) => {
+router.post('/addUser', checkAuth, (req,res) => {
     try {
         upload(req, res, async (err) => {
             if(!err) {
@@ -138,7 +140,7 @@ router.post('/addUser', (req,res) => {
     }
 })
 
-router.patch('/updateUser/:userID', async(req,res) => {
+router.patch('/updateUser/:userID', checkAuth, async(req,res) => {
     try {
         await db('tbl_users').where('userID', req.params.userID).update({
             fullName: req.body.fullName,
@@ -156,7 +158,7 @@ router.patch('/updateUser/:userID', async(req,res) => {
     }
 })
 
-router.patch('/updatePassword/:userID', async(req,res) => {
+router.patch('/updatePassword/:userID', checkAuth, async(req,res) => {
     try {
         await db('tbl_users').where('userID', req.params.userID).update({
             userPassword: bcrypt.hashSync(req.body.userPassword, 12),
@@ -167,7 +169,7 @@ router.patch('/updatePassword/:userID', async(req,res) => {
     }
 })
 
-router.patch('/updateImage/:userID', (req, res) => {
+router.patch('/updateImage/:userID', checkAuth, (req, res) => {
     upload(req, res, async (err) => {
         if(!err && req.file) {
             const [{oldImage}] = await db('tbl_users').where('userID', req.params.userID).select(['image as oldImage']);
@@ -184,7 +186,7 @@ router.patch('/updateImage/:userID', (req, res) => {
     })
 })
 
-router.delete('/deleteImage/:userID', async (req, res) => {
+router.delete('/deleteImage/:userID', checkAuth, async (req, res) => {
     try {
         const [{image}] = await db('tbl_users').where('userID', req.params.userID).select(['image']);
         await db('tbl_users').where('userID', req.params.userID).update({ image: null });
@@ -195,7 +197,7 @@ router.delete('/deleteImage/:userID', async (req, res) => {
     }
 })
 
-router.patch('/deactiveUser/:userID', async(req,res) => {
+router.patch('/deactiveUser/:userID', checkAuth, async(req,res) => {
     try {
         const [{noOfActives}] = await db('tbl_users').where('activeStatus', '1').count('* as noOfActives');
         if(noOfActives == 1) {
@@ -210,7 +212,7 @@ router.patch('/deactiveUser/:userID', async(req,res) => {
     }
 })
 
-router.patch('/activeUser/:userID', async(req,res) => {
+router.patch('/activeUser/:userID', checkAuth, async(req,res) => {
     try {
         await db('tbl_users').where('userID', req.params.userID).update({
             activeStatus: '1'
@@ -242,14 +244,14 @@ router.get('/allUser', async(req,res) => {
     }
 })
 
-router.get('/countAllUsers', async (req, res) => {
+router.get('/countAllUsers', checkAuth, async (req, res) => {
     const [{numberOfUsers}] = await db('tbl_users').where('activeStatus', '1').count('* as numberOfUsers');
     res.status(200).send({
         numberOfUsers
     });
 });
 
-router.get('/getSingleUser/:userID', async(req,res) => {
+router.get('/getSingleUser/:userID', checkAuth, async(req,res) => {
     try {
         const [getSingleUser] = await db.raw(`SELECT
         tbl_users.userID,
