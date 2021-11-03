@@ -172,7 +172,7 @@ router.get('/countAllItems', async (req, res) => {
     });
 });
 
-router.get('/image/:name', (req, res) => {
+router.get('/image/:name', (req,  res) => {
     res.sendFile(path.join(__dirname, '../Images/Items/' + req.params.name));
 });
 
