@@ -168,7 +168,7 @@ router.get('/getTopSaleByCat', async(req,res) => {
     }
 })
 
-router.get('/getTopSaleByCatToday', async(req,res) => {
+router.get('/getTopSaleByCatToday', async (req, res) => {
     try {
         const [getTopSaleByCat] = await db.raw(`SELECT
                 tbl_categories.categoryName,
