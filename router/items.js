@@ -6,7 +6,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const checkAuth = require('../checkAuth.js');
 require('dotenv').config();
-const router = express.Router()
+const router = express.Router();
 
 const fileStorage = multer.diskStorage({
     destination: './Images/Items',
