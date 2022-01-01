@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
         res.status(201).send()
     } catch (error) {
         console.log(error);
-        res.status(500).send()
+        res.status(500).send(error)
     }
 })
 router.post('/addItem', async (req, res) => {
