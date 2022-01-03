@@ -28,7 +28,6 @@ router.post('/', async (req, res) => {
         
         delete purchase.shelfID;
         
-        console.log(purchase);
         //insert purchase and return id of it
         const [purchase_id] = await db('tbl_purchases').insert(purchase)
 
