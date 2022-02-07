@@ -271,7 +271,7 @@ router.get('/getSupplier', async (req, res) => {
 })
 router.get('/getItems', async (req, res) => {
     try {
-        const items = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').where('itemCode', 'like', `${req.query.name}%`).orWhere('itemName', 'like', `${req.query.name}%`)
+        const items = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').whereRaw(`Lower(itemCode) like "%${req.query.name}%"`).orWhereRaw(`Lower(itemName) like "%${req.query.name}%"`)
         res.send(items)
     } catch (error) {
         console.log(error)
