@@ -604,10 +604,12 @@ router.get('/getSoldedItems/:from/:to', checkAuth, async (req, res) => {
             tbl_items.shelfID as shelfID, 
             tbl_invoice_item.qty as qty, 
             tbl_invoice_item.productPrice as productPrice,
-            tbl_invoices.invoiceID as invoiceID
+            tbl_invoices.invoiceID as invoiceID,
+            tbl_users.userName as userName
         FROM tbl_invoice_item
             JOIN tbl_items ON (tbl_items.itemID = tbl_invoice_item.itemID)
             JOIN tbl_invoices ON (tbl_invoices.invoiceID = tbl_invoice_item.invoiceID)
+            JOIN tbl_users ON (tbl_users.userID = tbl_invoices.userIDUpdate)
         WHERE tbl_invoices.stockType = 's' AND DATE(tbl_invoices.createAt) BETWEEN '${new Date(req.params.from).toISOString().split('T')[0]}' AND '${new Date(req.params.to).toISOString().split('T')[0]}'
             AND tbl_invoices.sellStatus = '1'
     `);
