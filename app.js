@@ -112,6 +112,10 @@ app.post('/verifyToken', (req, res) => {
 //       });
 // }, 24 * 60 * 60 * 1000)
 
+app.get('/404', (req, res) => {
+    res.send('Access Denied');
+});
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
