@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "174c6e33da70e490b2a8",
+    "revision": "2ba91b7bc4a1983585cd",
     "url": "/css/app.583de5d4.css"
   },
   {
@@ -116,12 +116,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/img/logo darin.60954348.png"
   },
   {
-    "revision": "dbc25550ab4745d80209d014847fc502",
+    "revision": "43ccc531ab53dc1bd812dcf97b47aaed",
     "url": "/index.html"
   },
   {
-    "revision": "174c6e33da70e490b2a8",
-    "url": "/js/app.c7479699.js"
+    "revision": "2ba91b7bc4a1983585cd",
+    "url": "/js/app.beda93de.js"
   },
   {
     "revision": "83faaaf0478d651577e4",
