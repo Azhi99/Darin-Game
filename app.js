@@ -40,7 +40,7 @@ app.use('/generalReport', checkAuth, generalReport)
 app.use('/owner', checkAuth, ownerRouter)
 app.use('/box', checkAuth, boxRouter)
 
-app.post('/login', async (req, res) => {
+app.post('/login',  async (req, res) => {
     const [user] = await db('tbl_users').where('userName', req.body.userName).select();
     if(user) {
         bcrypt.compare(req.body.password, user.userPassword, async (err, result) => {
