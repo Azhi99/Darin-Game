@@ -3,6 +3,7 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const path = require('path');
+const open = require('open')
 require('dotenv').config()
 const db = require('./DB/dbConfig'); 
 
@@ -122,4 +123,5 @@ app.get('*', (req, res) => {
 
 app.listen(process.env.PORT, () => {
     console.log(`Server started on port ${process.env.PORT}`);
+    open('http://localhost:3000')
 })
