@@ -123,5 +123,5 @@ app.get('*', (req, res) => {
 
 app.listen(process.env.PORT, () => {
     console.log(`Server started on port ${process.env.PORT}`);
-    open('http://localhost:3000')
+    // open('http://localhost:3000')
 })
