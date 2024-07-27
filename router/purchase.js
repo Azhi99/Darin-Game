@@ -284,6 +284,9 @@ router.get('/:id', async (req, res) => {
 
 
     var p = new Promise(async (resolve, reject) => {
+        if(purchase.purchase_items.length == 0) {
+            resolve()
+        }
         await purchase.purchase_items.forEach(async (item, index, array) => {
             const [items] = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').where('itemID', '=', item.itemID)
             purchase.purchase_items[index].item = { ...items }
