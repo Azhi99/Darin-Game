@@ -47,6 +47,7 @@ router.post('/addItem', checkAuth, async(req,res) => {
                     hideInStock: req.body.hideInStock || 1,
                     showButton: req.body.showButton || 0,
                     note: req.body.note || null,
+                    initialQty: req.body.initialQty || 0,
                     userIDCreated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
                     userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID,
                 })
@@ -82,6 +83,7 @@ router.patch('/updateItem/:itemID', checkAuth, async(req,res) => {
             showButton: req.body.showButton || '0',
             note: req.body.note,
             updateAt: new Date(),
+            initialQty: req.body.initialQty,
             userIDUpdated: (jwt.verify(req.headers.authorization.split(' ')[1], process.env.KEY)).userID
         })
         res.sendStatus(200)
@@ -148,6 +150,7 @@ router.get('/allItems', checkAuth, async (req, res) => {
         'tbl_items.hideInStock',
         'tbl_items.showButton',
         'tbl_items.note',
+        'tbl_items.initialQty',
         db.raw('IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock')
     ).from('tbl_items')
      .leftJoin('tbl_categories', 'tbl_items.categoryID', '=', 'tbl_categories.categoryID')
@@ -416,6 +419,7 @@ router.get('/inStock', checkAuth, async(req,res) => {
         tbl_items.brandID AS brandID,
         tbl_items.categoryID AS categoryID,
         IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'i' THEN tbl_stock.qty END), 0) AS initial,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'p' THEN tbl_stock.qty END), 0) AS purchased,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * (-1) AS returnPurchase,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * (-1) AS sold,
@@ -468,6 +472,7 @@ router.get('/inStockDeatil/:itemID', checkAuth, async(req,res) => {
         SUM(tbl_stock.qty) AS totalInStock,
         tbl_stock.expiryDate,
         SUM(tbl_stock.qty) / tbl_items.perUnit AS totalInStockPerUnit,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'i' THEN tbl_stock.qty END), 0) AS initial,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'p' THEN tbl_stock.qty END), 0) AS purchased,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * -1 AS returnPurchase,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * -1 AS sold,
@@ -549,7 +554,7 @@ router.get('/moneyInStock', checkAuth, async(req,res) => {
 
 router.get('/getItemForPurchase/:itemCode', checkAuth, async(req,res) => {
     try {
-        const [getItemForPurchase] = await db('tbl_items').where('itemCode', req.params.itemCode).select([
+        const [getItemForPurchase] = await db('tbl_items').where('itemCode', req.params.itemCode).andWhere('deleteStatus', '1').select([
             'itemID',
             'itemCode',
             'itemName',

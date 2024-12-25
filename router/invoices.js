@@ -10,7 +10,7 @@ const router = express.Router()
 router.post('/addInvoice', checkAuth, async(req,res) => {
     try {
         // const [item] = await db('tbl_items').where('itemCode', req.body.search).orWhere('itemName', req.body.search).andWhere('deleteStatus', '1').select();
-        const [item] = await db.select(
+        let [item] = await db.select(
             'tbl_items.itemID as itemID',
             'tbl_items.itemName as itemName',
             'tbl_items.perUnit as perUnit',
@@ -20,20 +20,23 @@ router.post('/addInvoice', checkAuth, async(req,res) => {
             'tbl_items.shelfID as shelfID',
             'tbl_shelfs.shelfName as shelfName',
             'tbl_items.unitID as unitID',
-            'tbl_units.unitName as unitName'
+            'tbl_units.unitName as unitName',
+            'tbl_items.deleteStatus as deleteStatus'
         ).from('tbl_items')
          .join('tbl_shelfs', 'tbl_items.shelfID', '=', 'tbl_shelfs.shelfID')
          .join('tbl_units', 'tbl_items.unitID', '=', 'tbl_units.unitID')
          .whereRaw(`LOWER(tbl_items.itemCode)='${req.body.search.toLowerCase()}'`)
          .orWhereRaw(`LOWER(tbl_items.itemName)='${req.body.search.toLowerCase()}'`)
-        //  .where('tbl_items.itemCode', req.body.search)
-        //  .orWhere('tbl_items.itemName', req.body.search)
-         .andWhere('tbl_items.deleteStatus', '1');
-        if(!item) {
+
+        
+        if(!item || item.deleteStatus == '0') {
             return res.status(500).send({
                 message: 'هیچ کاڵایەک نەدۆزرایەوە'
             });
         }
+
+        delete item.deleteStatus
+
         // const [[{expiryDate}]] = await db.raw(`
         //     select expiryDate from tbl_stock where itemID = ${item.itemID} group by itemID, expiryDate HAVING sum(qty) > 0 ORDER BY expiryDate asc limit 1
         // `);

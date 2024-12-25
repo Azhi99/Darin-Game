@@ -271,7 +271,21 @@ router.get('/getSupplier', async (req, res) => {
 })
 router.get('/getItems', async (req, res) => {
     try {
-        const items = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').whereRaw(`Lower(itemCode) like "%${req.query.name}%"`).orWhereRaw(`Lower(itemName) like "%${req.query.name}%"`)
+        // const items = await db('tbl_items').select('itemID', 'itemName', 'itemCode', 'costPrice', 'itemPriceRetail').whereRaw(`Lower(itemCode) like "%${req.query.name}%"`).orWhereRaw(`Lower(itemName) like "%${req.query.name}%"`)
+        const [items] = await db.raw(`
+        SELECT
+            tbl_items.itemID,
+            tbl_items.itemName,
+            tbl_items.itemCode,
+            tbl_items.costPrice,
+            tbl_items.itemPriceRetail
+        FROM
+            tbl_items
+        WHERE 
+        tbl_items.deleteStatus = '1' AND
+            (LOWER(tbl_items.itemCode) LIKE "%${req.query.name}%"
+            OR LOWER(tbl_items.itemName) LIKE "%${req.query.name}%")
+        `)
         res.send(items)
     } catch (error) {
         console.log(error)
