@@ -114,9 +114,10 @@ router.patch('/updateImage/:itemID', checkAuth, (req, res) => {
 
 router.delete('/deleteItem/:itemID', checkAuth, async(req,res) => {
     try {
-        await db('tbl_items').where('itemID', req.params.itemID).update({
-            deleteStatus: '0'
-        })
+        // await db('tbl_items').where('itemID', req.params.itemID).update({
+        //     deleteStatus: '0'
+        // })
+        await db('tbl_items').where('itemID', req.params.itemID).delete()
         res.sendStatus(200);
     } catch (error) {
         res.status(500).send(error)
@@ -425,6 +426,7 @@ router.get('/inStock', checkAuth, async(req,res) => {
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * (-1) AS sold,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rs' THEN tbl_stock.qty END), 0) AS returnSold,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * (-1) AS disposal,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'add' THEN tbl_stock.qty END), 0) AS added,
         tbl_units.unitName
       FROM tbl_items
         LEFT OUTER JOIN tbl_stock
@@ -435,7 +437,85 @@ router.get('/inStock', checkAuth, async(req,res) => {
       GROUP BY tbl_items.itemID,
                tbl_units.unitName`)
 
-      res.status(200).send(inStock)
+        const [addedToStock] = await db.raw(`SELECT
+            tbl_stock.stockID,
+            tbl_items.itemID AS itemID,
+            tbl_items.itemCode AS itemCode,
+            tbl_items.itemName AS itemName,
+            tbl_items.unitID AS unitID,
+            tbl_items.shelfID AS shelfID,
+            tbl_items.brandID AS brandID,
+            tbl_items.categoryID AS categoryID,
+            tbl_stock.qty,
+            tbl_units.unitName,
+            tbl_stock.createAt
+          FROM tbl_items
+            LEFT OUTER JOIN tbl_stock
+              ON tbl_stock.itemID = tbl_items.itemID
+            LEFT OUTER JOIN tbl_units
+              ON tbl_items.unitID = tbl_units.unitID
+          WHERE tbl_items.deleteStatus = '1' and tbl_items.hideInStock = '1' AND tbl_stock.sourceType = 'add'
+          order by tbl_stock.createAt desc
+          `)
+
+      res.status(200).send({
+        inStock,
+        addedToStock
+      })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.post('/addStock', async (req, res) => {
+    try {
+        const [id] = await db('tbl_stock').insert({
+            sourceID: req.body.itemID,
+            sourceType: 'add',
+            itemID: req.body.itemID,
+            qty: req.body.qty,
+            itemPrice: 0,
+            costPrice: 0,
+            expiryDate: null
+        })
+        const [[newData]] = await db.raw(`SELECT
+            tbl_items.itemID AS itemID,
+            tbl_items.itemCode AS itemCode,
+            tbl_items.itemName AS itemName,
+            tbl_items.unitID AS unitID,
+            tbl_items.shelfID AS shelfID,
+            tbl_items.brandID AS brandID,
+            tbl_items.categoryID AS categoryID,
+            IFNULL(SUM(tbl_stock.qty), 0) AS totalInStock,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'i' THEN tbl_stock.qty END), 0) AS initial,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'p' THEN tbl_stock.qty END), 0) AS purchased,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * (-1) AS returnPurchase,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * (-1) AS sold,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rs' THEN tbl_stock.qty END), 0) AS returnSold,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * (-1) AS disposal,
+            IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'add' THEN tbl_stock.qty END), 0) AS added,
+            tbl_units.unitName
+          FROM tbl_items
+            LEFT OUTER JOIN tbl_stock
+              ON tbl_stock.itemID = tbl_items.itemID
+            LEFT OUTER JOIN tbl_units
+              ON tbl_items.unitID = tbl_units.unitID
+          WHERE tbl_stock.stockID = ${id}
+          GROUP BY tbl_items.itemID,
+                   tbl_units.unitName`)
+
+        res.status(200).send({
+            newData
+        })
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
+router.delete('/deleteStock/:stockID', checkAuth, async(req,res) => {
+    try {
+        await db('tbl_stock').where('stockID', req.params.stockID).del()
+        res.sendStatus(200)
     } catch (error) {
         res.status(500).send(error)
     }
@@ -477,7 +557,8 @@ router.get('/inStockDeatil/:itemID', checkAuth, async(req,res) => {
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rp' THEN tbl_stock.qty END), 0) * -1 AS returnPurchase,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 's' THEN tbl_stock.qty END), 0) * -1 AS sold,
         IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'rs' THEN tbl_stock.qty END), 0) AS returnSold,
-        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * -1 AS disposal
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'd' THEN tbl_stock.qty END), 0) * -1 AS disposal,
+        IFNULL(SUM(CASE WHEN tbl_stock.sourceType = 'add' THEN tbl_stock.qty END), 0) AS addedI
       FROM tbl_stock
         INNER JOIN tbl_items
           ON tbl_stock.itemID = tbl_items.itemID
