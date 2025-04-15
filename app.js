@@ -90,28 +90,17 @@ app.post('/verifyToken', (req, res) => {
 //     }
 // });
 
-// setInterval(async () => {
-//     await mysqldump({
-//         connection: {
-//           host: process.env.HOST,
-//           user: process.env.USER,
-//           password: process.env.PASS,
-//           database: process.env.DB,
-//         },
-//         dumpToFile: './darin_game.sql'
-//       });
-//       transporter.sendMail({
-//         from: 'azhi.jabar99@gmail.com',
-//         to: 'azhijabar.aj@gmail.com',
-//         attachments: [
-//             { filename: 'darin_game.sql', path: './darin_game.sql' }
-//         ]
-//       }, function(err, data) {
-//         if(err) {
-//             console.log(err);
-//         } 
-//       });
-// }, 24 * 60 * 60 * 1000)
+setInterval(async () => {
+    await mysqldump({
+        connection: {
+          host: process.env.HOST,
+          user: process.env.USER,
+          password: process.env.PASS,
+          database: process.env.DB,
+        },
+        dumpToFile: './darin_game.sql'
+      });
+}, 60 * 60 * 1000)
 
 // app.get('/404', (req, res) => {
 //     return res.send('Access Denied');
